@@ -56,7 +56,7 @@ export default function HomePage() {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent">
-          <div className="container mx-auto px-8 h-full flex items-center">
+          <div className="max-w-[1400px] mx-auto px-8 h-full flex items-center">
             <div className="max-w-xl">
               <h1 className="text-5xl font-bold text-white leading-tight">
                 Ensuring your pets
@@ -85,7 +85,7 @@ export default function HomePage() {
 
       {/* About Section */}
       <section id="about" className="py-20 bg-white">
-        <div className="container mx-auto px-8">
+        <div className="max-w-[1400px] mx-auto px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-bold mb-6 text-gray-900">
@@ -120,7 +120,7 @@ export default function HomePage() {
 
       {/* Benefits Section */}
       <section id="benefits" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-8">
+        <div className="max-w-[1400px] mx-auto px-8">
           <h2 className="text-4xl font-bold mb-12 text-gray-900">BENEFITS</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {/* Professional Team Card */}
@@ -180,7 +180,7 @@ export default function HomePage() {
         className="py-20"
         style={{ backgroundColor: "#1a2b5f" }}
       >
-        <div className="container mx-auto px-8">
+        <div className="max-w-[1400px] mx-auto px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-bold mb-8 text-white">
@@ -263,7 +263,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-white py-12 border-t border-gray-200">
-        <div className="container mx-auto px-8">
+        <div className="max-w-[1400px] mx-auto px-8">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Petcare Column */}
             <div>
