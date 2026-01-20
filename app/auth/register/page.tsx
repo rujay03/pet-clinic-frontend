@@ -86,7 +86,7 @@ export default function RegisterPage() {
           <input
             id="email"
             type="email"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={form.email}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, email: e.target.value }))
@@ -106,7 +106,7 @@ export default function RegisterPage() {
           <input
             id="password"
             type="password"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={form.password}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, password: e.target.value }))
@@ -128,7 +128,7 @@ export default function RegisterPage() {
             id="confirmPassword"
             type="password"
             className={[
-              "w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+              "w-full border rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
               passwordMismatch ? "border-red-400" : "border-gray-300",
             ].join(" ")}
             value={form.confirmPassword}

@@ -89,7 +89,7 @@ export default function LoginPage() {
                 <input
                   id="email"
                   type="email"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={form.email}
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, email: e.target.value }))
@@ -110,7 +110,7 @@ export default function LoginPage() {
                   <input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={form.password}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, password: e.target.value }))
@@ -246,6 +246,7 @@ export default function LoginPage() {
               </p>
               <button
                 type="button"
+                onClick={() => router.push("/auth/register")}
                 className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
               >
                 Sign Up
