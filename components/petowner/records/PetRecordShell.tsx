@@ -153,7 +153,9 @@ export default function PetRecordShell() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500">Species</p>
-              <p className="mt-1 text-sm text-gray-900">{selectedPet.species}</p>
+              <p className="mt-1 text-sm text-gray-900">
+                {selectedPet.species}
+              </p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500">Breed</p>
