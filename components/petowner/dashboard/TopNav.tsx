@@ -1,5 +1,7 @@
 // components/dashboard/TopNav.tsx
 
+import Link from "next/link";
+
 interface TopNavProps {
   userEmail?: string;
   onLogout?: () => void;
@@ -19,13 +21,24 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
 
         {/* Center: navigation links */}
         <nav className="hidden items-center gap-6 text-sm md:flex">
-          <button className="font-medium text-white">Dashboard</button>
-          <button className="text-slate-200 hover:text-white">
+          <Link
+            href="/petowner/dashboard"
+            className="font-medium text-white hover:text-slate-100"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/petowner/appointments"
+            className="text-slate-200 hover:text-white"
+          >
             Appointments
-          </button>
-          <button className="text-slate-200 hover:text-white">
+          </Link>
+          <Link
+            href="/petowner/records"
+            className="text-slate-200 hover:text-white"
+          >
             Pet records
-          </button>
+          </Link>
         </nav>
 
         {/* Right: user + logout */}
