@@ -24,12 +24,13 @@ export default function DoctorAppointmentsPage() {
         if (!mounted) return;
         setMe(data);
       } catch (err) {
+        // Backend not available or authentication failed - use mock data for development
         if (err instanceof ApiError && err.status === 401) {
           // Uncomment to enforce authentication
           // router.replace("/doctor/login");
           console.log("Not authenticated, using mock user");
         } else {
-          console.error("Failed to load /me:", err);
+          console.log("Backend not available, using mock user for development");
         }
         // Use mock data for development when backend is not available
         if (!mounted) return;

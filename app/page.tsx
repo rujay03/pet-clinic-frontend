@@ -40,7 +40,7 @@ export default function HomePage() {
               className="px-6 py-2 rounded-full text-white text-sm font-medium hover:opacity-90 transition-opacity"
               style={{ backgroundColor: "#4F7FFF" }}
             >
-              Pet Care Portal
+              Pet Core Portal
             </Link>
           </div>
         </div>

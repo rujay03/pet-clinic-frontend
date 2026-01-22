@@ -203,7 +203,7 @@ export default function DoctorLoginPage() {
           <div className="flex flex-col justify-between relative">
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-4 text-gray-900">
-                New to Pet Care?
+                New to Pet Core?
               </h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
                 Access your veterinary dashboard to manage appointments, patient
@@ -236,7 +236,7 @@ export default function DoctorLoginPage() {
         {/* Footer */}
         <div className="px-12 pb-6 text-center">
           <p className="text-xs text-gray-400">
-            © 2025 Pet Care. All Rights Reserved. Developed by Ruwanthi
+            © 2025 Pet Core. All Rights Reserved. Developed by Ruwanthi
           </p>
         </div>
       </div>

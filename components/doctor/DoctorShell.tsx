@@ -12,14 +12,14 @@ interface DoctorShellProps {
 
 export default function DoctorShell({ children, userEmail }: DoctorShellProps) {
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Sidebar - Fixed */}
       <Sidebar />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top header - Fixed */}
+        <header className="bg-white border-b border-slate-200 px-8 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <span className="text-sm text-slate-500">Pages / Tables</span>
@@ -98,8 +98,8 @@ export default function DoctorShell({ children, userEmail }: DoctorShellProps) {
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 p-8">{children}</main>
+        {/* Main content - Scrollable */}
+        <main className="flex-1 overflow-y-auto p-8">{children}</main>
 
         {/* Doctor Profile Card */}
         <DoctorProfile userEmail={userEmail} />
