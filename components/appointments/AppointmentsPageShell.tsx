@@ -2,22 +2,59 @@
 
 import { useState } from "react";
 import PetSelector from "./PetSelector";
-import AppointmentsCalendar from "./AppointmentsCalendar";
+import AppointmentsCalendar, {
+  OngoingAppointmentBrief,
+} from "./AppointmentsCalendar";
 import AppointmentSummaryCard from "./AppointmentSummaryCard";
 import AppointmentHistoryTable from "./AppointmentHistoryTable";
+import AppointmentDetailModal, {
+  AppointmentDetail,
+} from "./AppointmentDetailModal";
+
+type OngoingAppointment = AppointmentDetail;
 
 export default function AppointmentsPageShell() {
-  // 📌 later this will come from backend (list of pets)
   const pets = [{ id: "roxy", name: "Roxy" }];
-
   const [selectedPetId, setSelectedPetId] = useState("roxy");
 
-  // 📌 initial selected date (matches the mock: July 2, 2024)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date(2024, 6, 2), // month is 0-based → 6 = July
+    new Date(2024, 6, 2),
   );
 
-  // 📌 dummy history data – later replace with API response
+  // Dummy ongoing appointments for the selected day
+  const ongoingAppointments: OngoingAppointment[] = [
+    {
+      id: "1",
+      time: "16:00",
+      title: "Limping checkup",
+      petName: "Roxy",
+      vetName: "Dr. Silva",
+      reason: "Limping on back leg",
+      notes: "Owner reports limping for 3 days, worse after walks.",
+      status: "In Progress",
+    },
+    {
+      id: "2",
+      time: "18:30",
+      title: "Vaccination booster",
+      petName: "Roxy",
+      vetName: "Dr. Fernando",
+      reason: "Annual vaccination booster",
+      notes: "Check weight and update vaccination record.",
+      status: "Scheduled",
+    },
+  ];
+
+  const briefList: OngoingAppointmentBrief[] = ongoingAppointments.map((a) => ({
+    id: a.id,
+    time: a.time,
+    title: a.title,
+    status: a.status,
+  }));
+
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentDetail | null>(null);
+
   const historyItems = [
     {
       date: "2023-01-15",
@@ -40,42 +77,58 @@ export default function AppointmentsPageShell() {
   ];
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col px-6 py-6">
-      {/* Top bar: title + pet selector + new appointment button */}
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-        <h1 className="text-2xl font-semibold text-slate-900">Appointments</h1>
+    <>
+      <main className="mx-auto flex max-w-6xl flex-col px-6 py-6">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Appointments
+          </h1>
 
-        <PetSelector
-          selectedPetId={selectedPetId}
-          pets={pets}
-          onChange={setSelectedPetId}
-          onNewAppointment={() => {
-            // 👉 later: open modal / navigate to new appointment form
-            console.log("New appointment clicked for pet:", selectedPetId);
-          }}
-        />
-      </div>
+          <PetSelector
+            selectedPetId={selectedPetId}
+            pets={pets}
+            onChange={setSelectedPetId}
+            onNewAppointment={() => {
+              console.log("New appointment clicked for pet:", selectedPetId);
+            }}
+          />
+        </div>
 
-      {/* Middle section: calendar (left) + appointment summary (right) */}
-      <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
-        <AppointmentsCalendar
-          selectedDate={selectedDate ?? new Date()}
-          onSelectDate={(date) => {
-            if (!date) return;
-            setSelectedDate(date);
-          }}
-        />
+        <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)] md:items-start">
+          <AppointmentsCalendar
+            selectedDate={selectedDate ?? new Date()}
+            onSelectDate={(date) => {
+              if (!date) return;
+              setSelectedDate(date);
+            }}
+            ongoingAppointments={briefList}
+            onSelectAppointment={(id) => {
+              const appt = ongoingAppointments.find((a) => a.id === id) || null;
+              setSelectedAppointment(appt);
+            }}
+          />
 
-        <AppointmentSummaryCard
-          petName="Roxy"
-          breed="Golden Retriever"
-          ageLabel="Female, 2 y.o"
-          note="Swollen leg for about 3 days"
-        />
-      </div>
+          <AppointmentSummaryCard
+            petName="Roxy"
+            breed="Golden Retriever"
+            ageLabel="Female, 2 y.o"
+            note="Swollen leg for about 3 days"
+            ongoingAppointments={briefList}
+            onSelectAppointment={(id) => {
+              const appt = ongoingAppointments.find((a) => a.id === id) || null;
+              setSelectedAppointment(appt);
+            }}
+          />
+        </div>
 
-      {/* Bottom section: history table */}
-      <AppointmentHistoryTable items={historyItems} />
-    </main>
+        <AppointmentHistoryTable items={historyItems} />
+      </main>
+
+      {/* Detail modal */}
+      <AppointmentDetailModal
+        appointment={selectedAppointment}
+        onClose={() => setSelectedAppointment(null)}
+      />
+    </>
   );
 }

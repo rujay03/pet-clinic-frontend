@@ -7,7 +7,7 @@ interface TopNavProps {
 
 export default function TopNav({ userEmail, onLogout }: TopNavProps) {
   return (
-    <header className="w-full bg-slate-900 text-white">
+    <header className="w-full bg-primary text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         {/* Left: logo + brand */}
         <div className="flex items-center gap-2">
