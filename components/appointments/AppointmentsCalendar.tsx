@@ -4,14 +4,25 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import "@/styles/daypicker.css";
 
+export interface OngoingAppointmentBrief {
+  id: string;
+  time: string;
+  title: string;
+  status?: "Scheduled" | "In Progress" | "Completed";
+}
+
 interface AppointmentsCalendarProps {
   selectedDate: Date;
   onSelectDate: (date: Date | undefined) => void;
+  ongoingAppointments: OngoingAppointmentBrief[];
+  onSelectAppointment: (id: string) => void;
 }
 
 export default function AppointmentsCalendar({
   selectedDate,
   onSelectDate,
+  ongoingAppointments,
+  onSelectAppointment,
 }: AppointmentsCalendarProps) {
   return (
     <div>
@@ -19,9 +30,8 @@ export default function AppointmentsCalendar({
         Scheduled Appointments
       </h3>
 
-      {/* Calendar + time side-by-side, shrink to content width */}
+      {/* Calendar + time side-by-side */}
       <div className="flex w-fit items-start gap-6">
-        {/* Calendar card */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <DayPicker
             mode="single"
@@ -31,7 +41,6 @@ export default function AppointmentsCalendar({
           />
         </div>
 
-        {/* Time input */}
         <div className="mt-4">
           <label
             htmlFor="time"
