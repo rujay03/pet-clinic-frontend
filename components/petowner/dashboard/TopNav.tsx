@@ -14,7 +14,7 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-700">
             <span className="text-sm font-semibold">PC</span>
           </div>
-          <span className="text-lg font-semibold">PetCare</span>
+          <span className="text-lg font-semibold">PetCore</span>
         </div>
 
         {/* Center: navigation links */}
