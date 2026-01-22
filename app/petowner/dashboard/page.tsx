@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { MeResponse } from "@/types/auth";
-import TopNav from "@/components/dashboard/TopNav";
-import DashboardShell from "@/components/dashboard/DashboardShell";
+import TopNav from "@/components/petowner/dashboard/TopNav";
+import DashboardShell from "@/components/petowner/dashboard/DashboardShell";
 
 export default function PetOwnerDashboardPage() {
   const router = useRouter();

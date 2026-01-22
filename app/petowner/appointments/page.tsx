@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
 import type { MeResponse } from "@/types/auth";
-import TopNav from "@/components/dashboard/TopNav";
-import AppointmentsPageShell from "@/components/appointments/AppointmentsPageShell";
+import TopNav from "@/components/petowner/dashboard/TopNav";
+import AppointmentsPageShell from "@/components/petowner/appointments/AppointmentsPageShell";
 
 export default function PetOwnerAppointmentsPage() {
   const router = useRouter();
