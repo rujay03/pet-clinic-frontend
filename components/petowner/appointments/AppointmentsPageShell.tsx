@@ -10,12 +10,14 @@ import AppointmentHistoryTable from "./AppointmentHistoryTable";
 import AppointmentDetailModal, {
   AppointmentDetail,
 } from "./AppointmentDetailModal";
+import BookingModal from "../booking/BookingModal";
 
 type OngoingAppointment = AppointmentDetail;
 
 export default function AppointmentsPageShell() {
   const pets = [{ id: "roxy", name: "Roxy" }];
   const [selectedPetId, setSelectedPetId] = useState("roxy");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(2024, 6, 2),
@@ -89,7 +91,7 @@ export default function AppointmentsPageShell() {
             pets={pets}
             onChange={setSelectedPetId}
             onNewAppointment={() => {
-              console.log("New appointment clicked for pet:", selectedPetId);
+              setIsBookingModalOpen(true);
             }}
           />
         </div>
@@ -128,6 +130,12 @@ export default function AppointmentsPageShell() {
       <AppointmentDetailModal
         appointment={selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
+      />
+
+      {/* Booking modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
       />
     </>
   );
