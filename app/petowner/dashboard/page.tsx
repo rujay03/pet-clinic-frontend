@@ -24,11 +24,11 @@ export default function PetOwnerDashboardPage() {
         if (!mounted) return;
         setMe(data);
       } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
-          router.replace("/auth/login");
-        } else {
-          console.error("Failed to load /me:", err);
-        }
+        // if (err instanceof ApiError && err.status === 401) {
+        //   router.replace("/auth/login");
+        // } else {
+        console.error("Failed to load /me:", err);
+        // }
       } finally {
         if (mounted) setLoading(false);
       }
