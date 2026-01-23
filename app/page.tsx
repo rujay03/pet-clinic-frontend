@@ -267,7 +267,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             {/* Petcare Column */}
             <div>
-              <h3 className="font-bold text-gray-900 mb-4">Petcare</h3>
+              <h3 className="font-bold text-gray-900 mb-4">Petcore</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li>
                   <Link href="#" className="hover:text-gray-900">

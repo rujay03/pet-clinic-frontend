@@ -1,6 +1,10 @@
 // components/dashboard/TopNav.tsx
 
+<<<<<<< HEAD
 import Image from "next/image";
+=======
+import Link from "next/link";
+>>>>>>> 260b93e5fce155b826698c723f73fc31df1c7354
 
 interface TopNavProps {
   userEmail?: string;
@@ -16,18 +20,29 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
           <div className="flex h-8 w-8 items-center justify-center">
             <Image src="/logo.png" alt="PetCare Logo" width={32} height={32} />
           </div>
-          <span className="text-lg font-semibold">PetCare</span>
+          <span className="text-lg font-semibold">PetCore</span>
         </div>
 
         {/* Center: navigation links */}
         <nav className="hidden items-center gap-6 text-sm md:flex">
-          <button className="font-medium text-white">Dashboard</button>
-          <button className="text-slate-200 hover:text-white">
+          <Link
+            href="/petowner/dashboard"
+            className="font-medium text-white hover:text-slate-100"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/petowner/appointments"
+            className="text-slate-200 hover:text-white"
+          >
             Appointments
-          </button>
-          <button className="text-slate-200 hover:text-white">
+          </Link>
+          <Link
+            href="/petowner/records"
+            className="text-slate-200 hover:text-white"
+          >
             Pet records
-          </button>
+          </Link>
         </nav>
 
         {/* Right: user + logout */}
