@@ -1,10 +1,7 @@
 // components/dashboard/TopNav.tsx
 
-<<<<<<< HEAD
 import Image from "next/image";
-=======
 import Link from "next/link";
->>>>>>> 260b93e5fce155b826698c723f73fc31df1c7354
 
 interface TopNavProps {
   userEmail?: string;
