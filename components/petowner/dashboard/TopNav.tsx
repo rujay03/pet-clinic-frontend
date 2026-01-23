@@ -1,5 +1,7 @@
 // components/dashboard/TopNav.tsx
 
+import Image from "next/image";
+
 interface TopNavProps {
   userEmail?: string;
   onLogout?: () => void;
@@ -11,8 +13,8 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         {/* Left: logo + brand */}
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-700">
-            <span className="text-sm font-semibold">PC</span>
+          <div className="flex h-8 w-8 items-center justify-center">
+            <Image src="/logo.png" alt="PetCare Logo" width={32} height={32} />
           </div>
           <span className="text-lg font-semibold">PetCare</span>
         </div>

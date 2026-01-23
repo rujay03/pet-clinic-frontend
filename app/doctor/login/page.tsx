@@ -206,8 +206,8 @@ export default function DoctorLoginPage() {
                 New to Pet Core?
               </h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Access your veterinary dashboard to manage appointments, patient
-                records, and provide the best care for your patients.
+                To register as a doctor on Pet Core, please contact the admin at
+                071-22-33-465.
               </p>
 
               <button
@@ -215,7 +215,7 @@ export default function DoctorLoginPage() {
                 onClick={() => router.push("/doctor/register")}
                 className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
               >
-                Create an Account
+                Contact Admin
               </button>
             </div>
 
