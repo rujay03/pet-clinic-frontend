@@ -7,11 +7,13 @@ import PharmacySidebar from "./Sidebar";
 interface PharmacyShellProps {
   children: ReactNode;
   userEmail?: string;
+  onLogout?: () => void;
 }
 
 export default function PharmacyShell({
   children,
   userEmail,
+  onLogout,
 }: PharmacyShellProps) {
   const currentDate = new Date().toLocaleDateString("en-US", {
     day: "numeric",
@@ -28,7 +30,7 @@ export default function PharmacyShell({
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Sidebar */}
-      <PharmacySidebar />
+      <PharmacySidebar onLogout={onLogout} />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">

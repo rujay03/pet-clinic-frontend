@@ -1,18 +1,17 @@
 // app/pharmacy-staff/medicine/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { MeResponse } from "@/types/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 import type { Medicine } from "@/types/pharmacy";
 import PharmacyShell from "@/components/pharmacy-staff/PharmacyShell";
 import MedicineTable from "@/components/pharmacy-staff/medicine/MedicineTable";
 
 export default function PharmacyMedicinePage() {
   const router = useRouter();
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,40 +71,7 @@ export default function PharmacyMedicinePage() {
   const totalMedicines = 298;
   const itemsPerPage = 8;
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadMe() {
-      try {
-        const data = await apiFetch<MeResponse>("/api/auth/me", {
-          method: "GET",
-        });
-        if (!mounted) return;
-        setMe(data);
-      } catch (err) {
-        // Backend not available - use mock data
-        if (!mounted) return;
-        setMe({ email: "pharmacy@example.com", roles: ["pharmacy-staff"] });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    loadMe();
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-slate-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!me) {
+  if (!user) {
     return null;
   }
 
@@ -118,7 +84,8 @@ export default function PharmacyMedicinePage() {
   });
 
   return (
-    <PharmacyShell userEmail={me.email}>
+    <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
+      <PharmacyShell userEmail={user.email} onLogout={logout}>
       <div>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -306,5 +273,6 @@ export default function PharmacyMedicinePage() {
         </div>
       </div>
     </PharmacyShell>
+    </ProtectedRoute>
   );
 }

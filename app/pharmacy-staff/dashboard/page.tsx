@@ -8,7 +8,7 @@ import KpiCard from "@/components/pharmacy-staff/dashboard/KpiCard";
 import DashboardSection from "@/components/pharmacy-staff/dashboard/DashboardSection";
 
 export default function PharmacyStaffDashboardPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   if (!user) {
     return null;
@@ -16,7 +16,7 @@ export default function PharmacyStaffDashboardPage() {
 
   return (
     <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
-      <PharmacyShell userEmail={user.email}>
+      <PharmacyShell userEmail={user.email} onLogout={logout}>
       <div>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

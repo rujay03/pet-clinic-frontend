@@ -11,7 +11,7 @@ import InventoryTable from "@/components/pharmacy-staff/inventory/InventoryTable
 
 export default function InventoryManagementPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +102,7 @@ export default function InventoryManagementPage() {
 
   return (
     <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
-      <PharmacyShell userEmail={user.email}>
+      <PharmacyShell userEmail={user.email} onLogout={logout}>
         <div>
           {/* Header */}
           <div className="flex items-center justify-between mb-6">

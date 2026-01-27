@@ -2,15 +2,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-export default function PharmacySidebar() {
+interface PharmacySidebarProps {
+  onLogout?: () => void;
+}
+
+export default function PharmacySidebar({ onLogout }: PharmacySidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/pharmacy-staff/login");
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   const navItems = [
