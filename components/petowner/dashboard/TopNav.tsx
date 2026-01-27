@@ -29,6 +29,12 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
             Dashboard
           </Link>
           <Link
+            href="/petowner/pets"
+            className="text-slate-200 hover:text-white"
+          >
+            Pets
+          </Link>
+          <Link
             href="/petowner/appointments"
             className="text-slate-200 hover:text-white"
           >
