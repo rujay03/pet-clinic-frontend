@@ -6,14 +6,14 @@ import type { MeResponse } from "@/types/auth";
 export function getDashboardRoute(user: MeResponse): string {
   const roles = user.roles.map((r) => r.replace("ROLE_", "").toUpperCase());
 
-  if (roles.includes("PETOWNER")) {
+  if (roles.includes("ADMIN")) {
+    return "/admin/dashboard";
+  } else if (roles.includes("PETOWNER")) {
     return "/petowner/dashboard";
   } else if (roles.includes("DOCTOR")) {
     return "/doctor/dashboard";
   } else if (roles.includes("PHARMACIST")) {
     return "/pharmacy-staff/dashboard";
-  } else if (roles.includes("ADMIN")) {
-    return "/pharmacy-staff/dashboard"; // Admin also goes to pharmacy dashboard
   }
 
   // Default fallback

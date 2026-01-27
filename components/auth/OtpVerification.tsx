@@ -3,10 +3,11 @@
 import { useState, useRef, KeyboardEvent, ClipboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, ApiError } from "@/lib/api";
+import type { PetOwnerSignupRequest, StaffSignupRequest } from "@/types/auth";
 
 interface OtpVerificationProps {
   email: string;
-  signupData: any;
+  signupData: PetOwnerSignupRequest | StaffSignupRequest;
   userType: "petowner" | "staff";
   onBack: () => void;
 }
