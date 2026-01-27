@@ -7,6 +7,7 @@ import AuthSplitCard from "@/components/auth/AuthSplitCard";
 import OtpVerification from "@/components/auth/OtpVerification";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { validatePassword, formatPhoneNumber, getPasswordRequirements } from "@/lib/validation";
 
 export default function StaffRegisterPage() {
   const router = useRouter();
@@ -30,13 +31,18 @@ export default function StaffRegisterPage() {
     return form.password !== form.confirmPassword;
   }, [form.password, form.confirmPassword]);
 
+  const passwordRequirements = useMemo(() => {
+    return getPasswordRequirements(form.password);
+  }, [form.password]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
     // Frontend validation
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    const passwordValidationError = validatePassword(form.password);
+    if (passwordValidationError) {
+      setError(passwordValidationError);
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -162,11 +168,20 @@ export default function StaffRegisterPage() {
             type="tel"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={form.contactNo}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, contactNo: e.target.value }))
-            }
+            onChange={(e) => {
+              const numericValue = formatPhoneNumber(e.target.value);
+              setForm((prev) => ({ ...prev, contactNo: numericValue }));
+            }}
+            onKeyDown={(e) => {
+              if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Tab') {
+                e.preventDefault();
+              }
+            }}
             autoComplete="tel"
-            placeholder="071 99 66 965"
+            placeholder="0719966965"
+            pattern="[0-9]*"
+            inputMode="numeric"
+            maxLength={10}
           />
         </div>
 
@@ -207,9 +222,10 @@ export default function StaffRegisterPage() {
               type={showPassword ? "text" : "password"}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={form.password}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, password: e.target.value }))
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                setForm((prev) => ({ ...prev, password: value }));
+              }}
               required
               autoComplete="new-password"
             />
@@ -221,7 +237,19 @@ export default function StaffRegisterPage() {
               {showPassword ? "👁️" : "👁️‍🗨️"}
             </button>
           </div>
-          <p className="mt-1 text-xs text-gray-400">Minimum 6 characters</p>
+          {form.password && passwordRequirements.some(req => !req.met) && (
+            <div className="mt-2 space-y-1">
+              {passwordRequirements.filter(req => !req.met).map((req, index) => (
+                <p
+                  key={index}
+                  className="text-xs text-red-600 flex items-center gap-1"
+                >
+                  <span>✗</span>
+                  <span>{req.text}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Confirm Password */}

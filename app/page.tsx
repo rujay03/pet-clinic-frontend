@@ -108,7 +108,7 @@ export default function HomePage() {
             </div>
             <div className="relative h-96">
               <Image
-                src="/cat-image.jpg"
+                src="/cat-image.png"
                 alt="Cat companion"
                 fill
                 className="object-cover rounded-3xl"
@@ -126,7 +126,7 @@ export default function HomePage() {
             {/* Professional Team Card */}
             <div className="relative h-80 rounded-3xl overflow-hidden group cursor-pointer">
               <Image
-                src="/professional-team.jpg"
+                src="/professional-team.png"
                 alt="Professional veterinary team"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -142,7 +142,7 @@ export default function HomePage() {
             {/* Treat with Love Card */}
             <div className="relative h-80 rounded-3xl overflow-hidden group cursor-pointer">
               <Image
-                src="/treat-with-love.jpg"
+                src="/treat-with-love.png"
                 alt="Treating pets with love"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -158,7 +158,7 @@ export default function HomePage() {
             {/* Emergency Care Card */}
             <div className="relative h-80 rounded-3xl overflow-hidden group cursor-pointer">
               <Image
-                src="/emergency-care.jpg"
+                src="/emergency-care.png"
                 alt="Emergency care services"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -204,7 +204,7 @@ export default function HomePage() {
                       d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"
                     />
                   </svg>
-                  <span>62 21345 8888</span>
+                  <span>011 29 42 415</span>
                 </div>
                 <div className="flex items-center gap-3 text-white">
                   <svg
@@ -222,7 +222,7 @@ export default function HomePage() {
                     />
                   </svg>
                   <div>
-                    <div>62 21345 4444</div>
+                    <div>071 27 65 078</div>
                     <div className="text-sm text-gray-300">
                       (Emergency Services)
                     </div>
@@ -250,7 +250,7 @@ export default function HomePage() {
             <div className="relative h-96">
               <div className="absolute inset-0 bg-gray-200 rounded-3xl overflow-hidden">
                 <Image
-                  src="/vet-expert.jpg"
+                  src="/vet-expert.png"
                   alt="Veterinary expert"
                   fill
                   className="object-cover"
@@ -302,7 +302,7 @@ export default function HomePage() {
               <h3 className="font-bold text-gray-900 mb-4">Stay Connected</h3>
               <p className="text-sm text-gray-600 mb-3">Contact</p>
               <p className="text-sm text-gray-600 mb-4">
-                hi.pawcare@pawcare.com
+                contact.petcore@petcore.com
               </p>
               <div className="flex gap-3">
                 <a
@@ -342,7 +342,7 @@ export default function HomePage() {
 
           {/* Copyright */}
           <div className="mt-8 pt-8 border-t border-gray-200 flex justify-between items-center text-sm text-gray-500">
-            <p>© Petcare.co</p>
+            <p>© Petcore</p>
             <Link href="#" className="hover:text-gray-900">
               Terms and Privacy Policy
             </Link>

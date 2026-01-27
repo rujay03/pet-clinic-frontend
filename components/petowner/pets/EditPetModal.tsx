@@ -45,8 +45,8 @@ export default function EditPetModal({
       });
 
       onSuccess();
-    } catch (err: any) {
-      setError(err.message || "Failed to update pet");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update pet");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export default function EditPetModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-black"
               placeholder="e.g., Max, Bella, Whiskers"
               required
             />
@@ -113,10 +113,10 @@ export default function EditPetModal({
               onChange={(e) =>
                 setFormData({ ...formData, species: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             >
-              <option value="">Select species</option>
+              <option value="" className="text-black">Select species</option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
               <option value="Bird">Bird</option>
@@ -139,7 +139,7 @@ export default function EditPetModal({
               onChange={(e) =>
                 setFormData({ ...formData, breed: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder:text-black"
               placeholder="e.g., Golden Retriever, Persian"
             />
           </div>
@@ -213,7 +213,7 @@ export default function EditPetModal({
                 setFormData({ ...formData, dateOfBirth: e.target.value })
               }
               max={new Date().toISOString().split("T")[0]}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             />
           </div>
 
@@ -228,7 +228,7 @@ export default function EditPetModal({
                 setFormData({ ...formData, notes: e.target.value })
               }
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-black placeholder:text-black"
               placeholder="Any special information about your pet..."
             />
           </div>
