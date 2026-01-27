@@ -1,19 +1,33 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
+import { FormEvent, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { getDashboardRoute } from "@/lib/auth-utils";
+import { ApiError } from "@/lib/api";
 import type { LoginRequest } from "@/types/auth";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
   const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [rememberPassword, setRememberPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Check if user just verified their email
+    if (searchParams.get("verified") === "true") {
+      setSuccessMessage(
+        "Email verified successfully! You can now login to your account."
+      );
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -21,13 +35,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await apiFetch("/api/auth/login", {
-        method: "POST",
-        body: form,
-      });
+      await login(form.email, form.password);
 
-      // ✅ If no error → session cookie is set, redirect to dashboard
-      router.push("/petowner/dashboard");
+      // Get user info to determine dashboard route
+      const meResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/me`,
+        { credentials: "include" }
+      );
+
+      if (meResponse.ok) {
+        const userData = await meResponse.json();
+        const dashboardRoute = getDashboardRoute(userData);
+        router.push(dashboardRoute);
+      } else {
+        // Fallback if /me fails
+        router.push("/petowner/dashboard");
+      }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -71,6 +94,12 @@ export default function LoginPage() {
             >
               Login
             </h1>
+
+            {successMessage && (
+              <div className="mb-4 rounded bg-green-100 text-green-700 px-3 py-2 text-sm">
+                {successMessage}
+              </div>
+            )}
 
             {error && (
               <div className="mb-4 rounded bg-red-100 text-red-700 px-3 py-2 text-sm">
@@ -238,19 +267,27 @@ export default function LoginPage() {
           <div className="flex flex-col justify-between relative">
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-4 text-gray-900">
-                Don't have an account?
+                Don&apos;t have an account?
               </h2>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Please come to the vet clinic with your pet for the registration
-                process.
+                Sign up as a pet owner or register as staff to access the system.
               </p>
-              <button
-                type="button"
-                onClick={() => router.push("/auth/register")}
-                className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
-              >
-                Sign Up
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/auth/register/petowner")}
+                  className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+                >
+                  Sign Up as Pet Owner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push("/auth/register/staff")}
+                  className="px-8 py-3 rounded-full border-2 border-gray-400 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Register as Staff
+                </button>
+              </div>
             </div>
 
             {/* Dog Image */}

@@ -17,3 +17,28 @@ export interface SignupRequest {
 export interface SignupForm extends SignupRequest {
   confirmPassword: string;
 }
+
+export interface PetOwnerSignupRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  contactNo: string;
+  address?: string;
+}
+
+export interface PetOwnerSignupForm extends PetOwnerSignupRequest {
+  confirmPassword: string;
+}
+
+export interface StaffSignupRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  contactNo?: string;
+  role: string; // DOCTOR, PHARMACIST, ADMIN
+}
+
+export interface StaffSignupForm extends StaffSignupRequest {
+  confirmPassword: string;
+}
+

@@ -1,58 +1,22 @@
 // app/pharmacy-staff/dashboard/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiFetch, ApiError } from "@/lib/api";
-import type { MeResponse } from "@/types/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 import PharmacyShell from "@/components/pharmacy-staff/PharmacyShell";
 import KpiCard from "@/components/pharmacy-staff/dashboard/KpiCard";
 import DashboardSection from "@/components/pharmacy-staff/dashboard/DashboardSection";
 
 export default function PharmacyStaffDashboardPage() {
-  const router = useRouter();
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadMe() {
-      try {
-        const data = await apiFetch<MeResponse>("/api/auth/me", {
-          method: "GET",
-        });
-        if (!mounted) return;
-        setMe(data);
-      } catch (err) {
-        // Backend not available - use mock data for development
-        if (!mounted) return;
-        setMe({ email: "pharmacy@example.com", roles: ["pharmacy-staff"] });
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    loadMe();
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-slate-600">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!me) {
+  if (!user) {
     return null;
   }
 
   return (
-    <PharmacyShell userEmail={me.email}>
+    <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
+      <PharmacyShell userEmail={user.email}>
       <div>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -250,5 +214,6 @@ export default function PharmacyStaffDashboardPage() {
         </div>
       </div>
     </PharmacyShell>
+    </ProtectedRoute>
   );
 }
