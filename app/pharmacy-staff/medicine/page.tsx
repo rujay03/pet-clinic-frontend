@@ -143,7 +143,7 @@ export default function PharmacyMedicinePage() {
               placeholder="Search Medicine Inventory.."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 placeholder:text-gray-400"
             />
             <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <svg
@@ -184,9 +184,9 @@ export default function PharmacyMedicinePage() {
             <select
               value={selectedGroup}
               onChange={(e) => setSelectedGroup(e.target.value)}
-              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm appearance-none cursor-pointer min-w-[200px]"
+              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 appearance-none cursor-pointer min-w-[200px]"
             >
-              <option value="">- Select Group -</option>
+              <option value="" className="text-gray-400">- Select Group -</option>
               <option value="Generic Medicine">Generic Medicine</option>
               <option value="Diabetes">Diabetes</option>
             </select>

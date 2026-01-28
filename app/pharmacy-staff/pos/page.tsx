@@ -18,49 +18,49 @@ export default function POSPage() {
   const mockProducts: POSProduct[] = [
     {
       id: "1",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
     {
       id: "2",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 5600.0,
       stock: 50,
     },
     {
       id: "3",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
     {
       id: "4",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 8400.0,
       stock: 50,
     },
     {
       id: "5",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
     {
       id: "6",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
     {
       id: "7",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
     {
       id: "8",
-      name: "ALOE VERA BODY LOTION",
+      name: "PEDIGREE Puppy Chicken",
       price: 2800.0,
       stock: 50,
     },
@@ -285,7 +285,7 @@ export default function POSPage() {
                 placeholder="Search Medicine"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder:text-gray-400"
               />
             </div>
 
