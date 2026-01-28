@@ -3,16 +3,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    // Clear any auth tokens
-    localStorage.removeItem("token");
-    router.push("/admin/login");
+  const handleLogout = async () => {
+    await logout();
   };
 
   const navItems = [
@@ -36,27 +34,8 @@ export default function AdminSidebar() {
       ),
     },
     {
-      name: "Manage User",
+      name: "Manage Users",
       href: "/admin/users/manage",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-          />
-        </svg>
-      ),
-    },
-    {
-      name: "View Users",
-      href: "/admin/users",
       icon: (
         <svg
           className="w-5 h-5"
@@ -76,9 +55,9 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+    <aside className="w-64 h-screen bg-white border-r border-slate-200 flex flex-col">
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-slate-200">
+      <div className="px-6 py-6 border-b border-slate-200 flex-shrink-0">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">PET CORE</h1>
         <p className="text-xs text-slate-500 mt-1">Admin Panel</p>
       </div>
@@ -86,20 +65,7 @@ export default function AdminSidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href && !item.isLogout;
-
-          if (item.isLogout) {
-            return (
-              <button
-                key={item.name}
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 w-full transition-colors"
-              >
-                {item.icon}
-                <span className="font-medium">{item.name}</span>
-              </button>
-            );
-          }
+          const isActive = pathname === item.href;
 
           return (
             <Link
@@ -117,6 +83,29 @@ export default function AdminSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout Button at Bottom */}
+      <div className="px-4 py-6 border-t border-slate-200 flex-shrink-0">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 w-full transition-colors"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          <span className="font-medium">Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

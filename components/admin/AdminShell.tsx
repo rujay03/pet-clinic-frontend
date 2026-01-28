@@ -3,7 +3,6 @@
 
 import { ReactNode } from "react";
 import AdminSidebar from "./AdminSidebar";
-import AdminProfile from "./AdminProfile";
 
 interface AdminShellProps {
   children: ReactNode;
@@ -100,9 +99,6 @@ export default function AdminShell({ children, userEmail }: AdminShellProps) {
 
         {/* Main content - Scrollable */}
         <main className="flex-1 overflow-y-auto p-8">{children}</main>
-
-        {/* Admin Profile Card */}
-        <AdminProfile userEmail={userEmail} />
       </div>
     </div>
   );
