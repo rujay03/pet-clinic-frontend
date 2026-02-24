@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
+import type { Pet } from "@/types/pet";
 
 interface MedicalHistoryRecord {
   date: string;
@@ -16,40 +18,31 @@ interface FileRecord {
   action: "View" | "Download";
 }
 
-interface Pet {
-  id: string;
-  name: string;
-  species: string;
-  breed: string;
-  age: string;
-}
-
 export default function PetRecordShell() {
-  const pets: Pet[] = [
-    {
-      id: "buddy",
-      name: "Buddy",
-      species: "Dog",
-      breed: "Golden Retriever",
-      age: "5 years",
-    },
-    {
-      id: "roxy",
-      name: "Roxy",
-      species: "Dog",
-      breed: "Golden Retriever",
-      age: "2 years",
-    },
-    {
-      id: "lucy",
-      name: "Lucy",
-      species: "Cat",
-      breed: "Persian",
-      age: "3 years",
-    },
-  ];
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
 
-  const [selectedPetId, setSelectedPetId] = useState(pets[0].id);
+  useEffect(() => {
+    loadPets();
+  }, []);
+
+  const loadPets = async () => {
+    try {
+      setLoading(true);
+      const data = await apiFetch<Pet[]>("/api/pets");
+      setPets(data);
+      // Set the first pet as selected by default
+      if (data.length > 0) {
+        setSelectedPetId(data[0].id);
+      }
+    } catch (error) {
+      console.error("Failed to load pets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const selectedPet = pets.find((pet) => pet.id === selectedPetId) || pets[0];
 
   const [medicalHistory] = useState<MedicalHistoryRecord[]>([
@@ -93,6 +86,26 @@ export default function PetRecordShell() {
     // Implement view/download logic here
   };
 
+  if (loading) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-600">Loading pets...</div>
+        </div>
+      </main>
+    );
+  }
+
+  if (pets.length === 0) {
+    return (
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <div className="text-center py-12">
+          <p className="text-gray-600">No pets found. Please add a pet first.</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       {/* Page Header with Pet Selector */}
@@ -111,8 +124,8 @@ export default function PetRecordShell() {
           </label>
           <div className="relative">
             <select
-              value={selectedPetId}
-              onChange={(e) => setSelectedPetId(e.target.value)}
+              value={selectedPetId || ""}
+              onChange={(e) => setSelectedPetId(Number(e.target.value))}
               className="w-48 appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 text-sm text-gray-900 shadow-sm hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               {pets.map((pet) => (
@@ -159,11 +172,13 @@ export default function PetRecordShell() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500">Breed</p>
-              <p className="mt-1 text-sm text-gray-900">{selectedPet.breed}</p>
+              <p className="mt-1 text-sm text-gray-900">{selectedPet.breed || "N/A"}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500">Age</p>
-              <p className="mt-1 text-sm text-gray-900">{selectedPet.age}</p>
+              <p className="mt-1 text-sm text-gray-900">
+                {selectedPet.age ? `${selectedPet.age} years` : "N/A"}
+              </p>
             </div>
           </div>
         </div>
