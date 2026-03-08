@@ -35,22 +35,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(form.email, form.password);
+      const userData = await login(form.email, form.password);
 
-      // Get user info to determine dashboard route
-      const meResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/me`,
-        { credentials: "include" }
-      );
-
-      if (meResponse.ok) {
-        const userData = await meResponse.json();
-        const dashboardRoute = getDashboardRoute(userData);
-        router.push(dashboardRoute);
-      } else {
-        // Fallback if /me fails
-        router.push("/petowner/dashboard");
-      }
+      // Use returned user data to determine dashboard route
+      const dashboardRoute = getDashboardRoute(userData);
+      router.replace(dashboardRoute);
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         setError(err.message);

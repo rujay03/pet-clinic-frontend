@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
+import type { Pet } from "@/types/pet";
 
 interface BookingDetailsStepProps {
   data: {
@@ -33,13 +35,33 @@ export default function BookingDetailsStep({
     note: data.note,
   });
 
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [petsLoading, setPetsLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch<Pet[]>("/api/pets")
+      .then((p) => setPets(p))
+      .catch(() => setPets([]))
+      .finally(() => setPetsLoading(false));
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "petSelect") {
+      const selected = pets.find((p) => String(p.id) === value);
+      setFormData((prev) => ({
+        ...prev,
+        petId: value,
+        petName: selected ? selected.name : "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -140,16 +162,21 @@ export default function BookingDetailsStep({
             </label>
             <div className="relative">
               <select
-                name="petName"
-                value={formData.petName}
+                name="petSelect"
+                value={formData.petId}
                 onChange={handleChange}
                 className="w-full appearance-none rounded-lg border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20"
                 required
+                disabled={petsLoading}
               >
-                <option value="">Select a pet</option>
-                <option value="Roxy">Roxy</option>
-                <option value="Lucy">Lucy</option>
-                <option value="Max">Max</option>
+                <option value="">
+                  {petsLoading ? "Loading pets…" : "Select a pet"}
+                </option>
+                {pets.map((pet) => (
+                  <option key={pet.id} value={String(pet.id)}>
+                    {pet.name} ({pet.species})
+                  </option>
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
                 <svg

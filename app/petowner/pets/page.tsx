@@ -11,15 +11,18 @@ import AddPetModal from "@/components/petowner/pets/AddPetModal";
 import EditPetModal from "@/components/petowner/pets/EditPetModal";
 
 export default function PetsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
 
   useEffect(() => {
-    loadPets();
-  }, []);
+    // Only load pets when user is authenticated
+    if (user && !authLoading) {
+      loadPets();
+    }
+  }, [user, authLoading]);
 
   const loadPets = async () => {
     try {

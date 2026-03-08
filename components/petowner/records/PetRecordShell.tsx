@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Pet } from "@/types/pet";
 
 interface MedicalHistoryRecord {
@@ -19,13 +20,17 @@ interface FileRecord {
 }
 
 export default function PetRecordShell() {
+  const { user, loading: authLoading } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
 
   useEffect(() => {
-    loadPets();
-  }, []);
+    // Only load pets when user is authenticated
+    if (user && !authLoading) {
+      loadPets();
+    }
+  }, [user, authLoading]);
 
   const loadPets = async () => {
     try {

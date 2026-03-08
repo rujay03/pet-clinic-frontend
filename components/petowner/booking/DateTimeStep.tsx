@@ -14,12 +14,14 @@ interface DateTimeStepProps {
   };
   onNext: (data: any) => void;
   onBack: () => void;
+  submitting?: boolean;
 }
 
 export default function DateTimeStep({
   data,
   onNext,
   onBack,
+  submitting = false,
 }: DateTimeStepProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     data.selectedDate || undefined,
@@ -107,15 +109,17 @@ export default function DateTimeStep({
         <button
           type="button"
           onClick={onBack}
-          className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          disabled={submitting}
+          className="rounded-lg border border-gray-300 px-8 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
         >
           Back
         </button>
         <button
           type="submit"
-          className="rounded-lg bg-[#6366F1] px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-[#5558E3]"
+          disabled={submitting}
+          className="rounded-lg bg-[#6366F1] px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-[#5558E3] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Continue
+          {submitting ? "Booking…" : "Confirm Booking"}
         </button>
       </div>
     </form>

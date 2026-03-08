@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import type { MeResponse } from "@/types/auth";
@@ -8,7 +8,7 @@ import type { MeResponse } from "@/types/auth";
 interface AuthContextType {
   user: MeResponse | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<MeResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -20,6 +20,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  const initialLoadDoneRef = useRef(false);
+
+  // Keep pathname ref updated
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -29,30 +36,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data);
     } catch {
       setUser(null);
-      // Only redirect to login if not on public pages
-      const publicPaths = ["/", "/auth/login", "/auth/register/petowner", "/auth/register/staff"];
-      if (!publicPaths.includes(pathname)) {
-        router.replace("/auth/login");
-      }
     }
-  }, [pathname, router]);
+  }, []);
 
+  // Initial load - runs only once
   useEffect(() => {
+    if (initialLoadDoneRef.current) return;
+    initialLoadDoneRef.current = true;
+
     const loadUser = async () => {
       setLoading(true);
-      await refreshUser();
-      setLoading(false);
+      try {
+        const data = await apiFetch<MeResponse>("/api/auth/me", {
+          method: "GET",
+        });
+        setUser(data);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadUser();
-  }, [refreshUser]);
+  }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<MeResponse> => {
     await apiFetch("/api/auth/login", {
       method: "POST",
       body: { email, password },
     });
-    await refreshUser();
+    const data = await apiFetch<MeResponse>("/api/auth/me", {
+      method: "GET",
+    });
+    setUser(data);
+    return data;
   };
 
   const logout = async () => {

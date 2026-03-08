@@ -1,141 +1,267 @@
 "use client";
 
-import { useState } from "react";
-import PetSelector from "./PetSelector";
-import AppointmentsCalendar, {
-  OngoingAppointmentBrief,
-} from "./AppointmentsCalendar";
-import AppointmentSummaryCard from "./AppointmentSummaryCard";
-import AppointmentHistoryTable from "./AppointmentHistoryTable";
-import AppointmentDetailModal, {
-  AppointmentDetail,
-} from "./AppointmentDetailModal";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { apiFetch, ApiError } from "@/lib/api";
+import type { Pet } from "@/types/pet";
+import type { Appointment } from "@/types/appointment";
+import AppointmentsHeader from "./AppointmentsHeader";
+import AppointmentsTabs, { type TabType } from "./AppointmentsTabs";
+import AppointmentsFilterBar, {
+  type AppointmentFilters,
+} from "./AppointmentsFilterBar";
+import AppointmentsList from "./AppointmentsList";
 import BookingModal from "../booking/BookingModal";
 
-type OngoingAppointment = AppointmentDetail;
+const PAGE_SIZE = 5;
 
 export default function AppointmentsPageShell() {
-  const pets = [{ id: "roxy", name: "Roxy" }];
-  const [selectedPetId, setSelectedPetId] = useState("roxy");
+  // ── data ──
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── UI state ──
+  const [activeTab, setActiveTab] = useState<TabType>("upcoming");
+  const [filters, setFilters] = useState<AppointmentFilters>({
+    petId: "",
+    doctorName: "",
+    dateFrom: "",
+    dateTo: "",
+    search: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState<AppointmentFilters>({
+    petId: "",
+    doctorName: "",
+    dateFrom: "",
+    dateTo: "",
+    search: "",
+  });
+  const [upcomingPage, setUpcomingPage] = useState(1);
+  const [pastPage, setPastPage] = useState(1);
+  const [cancelledPage, setCancelledPage] = useState(1);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-    new Date(2024, 6, 2),
+  // ── fetch data ──
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Load pets
+      const petsData = await apiFetch<Pet[]>("/api/pets");
+      setPets(petsData);
+
+      // Load appointments
+      try {
+        const raw = await apiFetch<any[]>("/api/appointments/my");
+        const mapped: Appointment[] = raw.map((a) => ({
+          id: a.id,
+          petId: a.petId,
+          petName: a.petName || "Unknown",
+          petBreed: a.petBreed || a.breed || undefined,
+          petImageUrl: a.petImageUrl || undefined,
+          petSpecies: a.petSpecies || a.species || undefined,
+          doctorName: a.doctorName || "Dr. Unknown",
+          doctorImageUrl: a.doctorImageUrl || undefined,
+          appointmentDate: a.appointmentDate || a.date || "",
+          appointmentTime: a.appointmentTime || a.time || "",
+          status: a.status || "Pending",
+          reason: a.reason || undefined,
+          notes: a.notes || undefined,
+          price: a.price || undefined,
+        }));
+        setAppointments(mapped);
+      } catch {
+        // endpoint not available yet
+        setAppointments([]);
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to load data.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // ── derived lists ──
+  const applyFilters = useCallback(
+    (list: Appointment[]) => {
+      const f = appliedFilters;
+      return list.filter((a) => {
+        if (f.petId && String(a.petId) !== f.petId) return false;
+        if (f.doctorName && a.doctorName !== f.doctorName) return false;
+        if (f.dateFrom && a.appointmentDate < f.dateFrom) return false;
+        if (f.dateTo && a.appointmentDate > f.dateTo) return false;
+        if (f.search) {
+          const q = f.search.toLowerCase();
+          const hay = `${a.petName} ${a.doctorName} ${a.petBreed || ""} ${a.reason || ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    },
+    [appliedFilters],
   );
 
-  // Dummy ongoing appointments for the selected day
-  const ongoingAppointments: OngoingAppointment[] = [
-    {
-      id: "1",
-      time: "16:00",
-      title: "Limping checkup",
-      petName: "Roxy",
-      vetName: "Dr. Silva",
-      reason: "Limping on back leg",
-      notes: "Owner reports limping for 3 days, worse after walks.",
-      status: "In Progress",
-    },
-    {
-      id: "2",
-      time: "18:30",
-      title: "Vaccination booster",
-      petName: "Roxy",
-      vetName: "Dr. Fernando",
-      reason: "Annual vaccination booster",
-      notes: "Check weight and update vaccination record.",
-      status: "Scheduled",
-    },
-  ];
+  const upcoming = useMemo(
+    () =>
+      applyFilters(
+        appointments.filter(
+          (a) => a.status === "Confirmed" || a.status === "Pending",
+        ),
+      ),
+    [appointments, applyFilters],
+  );
 
-  const briefList: OngoingAppointmentBrief[] = ongoingAppointments.map((a) => ({
-    id: a.id,
-    time: a.time,
-    title: a.title,
-    status: a.status,
-  }));
+  const past = useMemo(
+    () => applyFilters(appointments.filter((a) => a.status === "Completed")),
+    [appointments, applyFilters],
+  );
 
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<AppointmentDetail | null>(null);
+  const cancelled = useMemo(
+    () => applyFilters(appointments.filter((a) => a.status === "Cancelled")),
+    [appointments, applyFilters],
+  );
 
-  const historyItems = [
-    {
-      date: "2023-01-15",
-      petName: "Roxy",
-      note: "Annual Checkup",
-      type: "Vaccinations",
-    },
-    {
-      date: "2023-05-20",
-      petName: "Roxy",
-      note: "Skin Condition",
-      type: "Medication",
-    },
-    {
-      date: "2023-09-10",
-      petName: "Roxy",
-      note: "Limping",
-      type: "Rest and Pain Relief",
-    },
-  ];
+  // unique doctor names from all appointments
+  const doctorNames = useMemo(
+    () => [...new Set(appointments.map((a) => a.doctorName))].sort(),
+    [appointments],
+  );
+
+  // ── handlers ──
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...filters });
+    setUpcomingPage(1);
+    setPastPage(1);
+    setCancelledPage(1);
+  };
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+  };
+
+  const handleCancel = async (id: number) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+    try {
+      await apiFetch(`/api/appointments/${id}/cancel`, { method: "PATCH" });
+      await loadData();
+    } catch {
+      alert("Failed to cancel appointment. The endpoint may not be available yet.");
+    }
+  };
+
+  const handleReschedule = (_id: number) => {
+    // Open booking modal (could be enhanced to pre-fill with existing data)
+    setIsBookingModalOpen(true);
+  };
+
+  // ── render ──
+  if (loading) {
+    return (
+      <main className="mx-auto flex max-w-6xl flex-col px-6 py-6">
+        <div className="flex items-center justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          <span className="ml-3 text-sm text-slate-500">Loading appointments…</span>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
       <main className="mx-auto flex max-w-6xl flex-col px-6 py-6">
-        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Appointments
-          </h1>
+        {/* Header */}
+        <AppointmentsHeader onSchedule={() => setIsBookingModalOpen(true)} />
 
-          <PetSelector
-            selectedPetId={selectedPetId}
-            pets={pets}
-            onChange={setSelectedPetId}
-            onNewAppointment={() => {
-              setIsBookingModalOpen(true);
-            }}
+        {/* Tabs + Filters Card */}
+        <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <AppointmentsTabs
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            upcomingCount={upcoming.length}
           />
+
+          <div className="mt-5">
+            <AppointmentsFilterBar
+              filters={filters}
+              onFiltersChange={setFilters}
+              onApply={handleApplyFilters}
+              pets={pets.map((p) => ({ id: p.id, name: p.name }))}
+              doctors={doctorNames}
+            />
+          </div>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)] md:items-start">
-          <AppointmentsCalendar
-            selectedDate={selectedDate ?? new Date()}
-            onSelectDate={(date) => {
-              if (!date) return;
-              setSelectedDate(date);
-            }}
-            ongoingAppointments={briefList}
-            onSelectAppointment={(id) => {
-              const appt = ongoingAppointments.find((a) => a.id === id) || null;
-              setSelectedAppointment(appt);
-            }}
-          />
+        {/* Error */}
+        {error && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-          <AppointmentSummaryCard
-            petName="Roxy"
-            breed="Golden Retriever"
-            ageLabel="Female, 2 y.o"
-            note="Swollen leg for about 3 days"
-            ongoingAppointments={briefList}
-            onSelectAppointment={(id) => {
-              const appt = ongoingAppointments.find((a) => a.id === id) || null;
-              setSelectedAppointment(appt);
-            }}
+        {/* Lists */}
+        {activeTab === "upcoming" && (
+          <AppointmentsList
+            title="Upcoming Appointments"
+            appointments={upcoming}
+            variant="upcoming"
+            page={upcomingPage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setUpcomingPage}
+            onReschedule={handleReschedule}
+            onCancel={handleCancel}
           />
-        </div>
+        )}
 
-        <AppointmentHistoryTable items={historyItems} />
+        {activeTab === "upcoming" && past.length > 0 && (
+          <AppointmentsList
+            title="Past Appointments"
+            appointments={past}
+            variant="past"
+            page={pastPage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPastPage}
+          />
+        )}
+
+        {activeTab === "past" && (
+          <AppointmentsList
+            title="Past Appointments"
+            appointments={past}
+            variant="past"
+            page={pastPage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPastPage}
+          />
+        )}
+
+        {activeTab === "cancelled" && (
+          <AppointmentsList
+            title="Cancelled Appointments"
+            appointments={cancelled}
+            variant="cancelled"
+            page={cancelledPage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setCancelledPage}
+          />
+        )}
       </main>
-
-      {/* Detail modal */}
-      <AppointmentDetailModal
-        appointment={selectedAppointment}
-        onClose={() => setSelectedAppointment(null)}
-      />
 
       {/* Booking modal */}
       <BookingModal
         isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
+        onClose={() => {
+          setIsBookingModalOpen(false);
+          loadData(); // refresh after potential booking
+        }}
       />
     </>
   );

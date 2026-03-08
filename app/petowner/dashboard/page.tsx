@@ -8,14 +8,10 @@ import DashboardShell from "@/components/petowner/dashboard/DashboardShell";
 export default function PetOwnerDashboardPage() {
   const { user, logout } = useAuth();
 
-  if (!user) {
-    return null;
-  }
-
   return (
     <ProtectedRoute allowedRoles={["PETOWNER"]}>
       <div className="min-h-screen bg-gray-50">
-        <TopNav userEmail={user.email} onLogout={logout} />
+        <TopNav userEmail={user?.email} onLogout={logout} />
         <DashboardShell />
       </div>
     </ProtectedRoute>

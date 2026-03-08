@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { apiFetch } from "@/lib/api";
 import BookingDetailsStep from "@/components/petowner/booking/BookingDetailsStep";
 import DateTimeStep from "@/components/petowner/booking/DateTimeStep";
-import PaymentStep from "@/components/petowner/booking/PaymentStep";
 import BookingSuccessModal from "@/components/petowner/booking/BookingSuccessModal";
 
 interface BookingData {
@@ -40,6 +40,8 @@ interface BookingModalProps {
 export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<BookingData>({
     firstName: "",
     lastName: "",
@@ -59,24 +61,48 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     cvv: "",
   });
 
-  const handleNext = (stepData: Partial<BookingData>) => {
-    setBookingData({ ...bookingData, ...stepData });
+  const handleNext = async (stepData: Partial<BookingData>) => {
+    const merged = { ...bookingData, ...stepData };
+    setBookingData(merged);
 
-    // Skip payment step for now - go directly to success after step 2
     if (currentStep === 2) {
-      // Show success modal after date/time selection
-      setShowSuccess(true);
+      // Submit appointment to the backend API
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const date = merged.selectedDate;
+        const appointmentDate = date
+          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+          : "";
+
+        const appointmentTime = merged.selectedTime
+          ? merged.selectedTime.length === 5
+            ? `${merged.selectedTime}:00`
+            : merged.selectedTime
+          : "";
+
+        await apiFetch("/api/appointments", {
+          method: "POST",
+          body: {
+            petId: Number(merged.petId),
+            appointmentDate,
+            appointmentTime,
+            appointmentType: merged.appointmentType,
+            notes: merged.note || null,
+          },
+        });
+
+        setShowSuccess(true);
+      } catch (err: any) {
+        setSubmitError(
+          err?.message || "Failed to book appointment. Please try again."
+        );
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       setCurrentStep(currentStep + 1);
     }
-
-    // Commented out: Payment step
-    // if (currentStep === 3) {
-    //   // Final step - show success modal
-    //   setShowSuccess(true);
-    // } else {
-    //   setCurrentStep(currentStep + 1);
-    // }
   };
 
   const handleBack = () => {
@@ -89,6 +115,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     // Reset state
     setCurrentStep(1);
     setShowSuccess(false);
+    setSubmitError(null);
     setBookingData({
       firstName: "",
       lastName: "",
@@ -161,6 +188,13 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           /> */}
         </div>
 
+        {/* Error banner */}
+        {submitError && (
+          <div className="mx-8 mb-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {submitError}
+          </div>
+        )}
+
         {/* Content Area */}
         <div className="h-[calc(100%-180px)] overflow-y-auto px-8 pb-6">
           {currentStep === 1 && (
@@ -171,16 +205,9 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
               data={bookingData}
               onNext={handleNext}
               onBack={handleBack}
+              submitting={submitting}
             />
           )}
-          {/* Commented out: Payment step */}
-          {/* {currentStep === 3 && (
-            <PaymentStep
-              data={bookingData}
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )} */}
         </div>
       </div>
     </div>
