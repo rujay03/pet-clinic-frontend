@@ -11,11 +11,6 @@ interface AppointmentCardProps {
   onCancel?: (id: number) => void;
 }
 
-/** Pick a default pet avatar based on species */
-function getDefaultPetImage(species?: string) {
-  if (species?.toLowerCase() === "cat") return "/cat-image.png";
-  return "/dog.png";
-}
 
 /** Format date like "Thu, Apr 25, 2024" */
 function formatDate(dateStr: string) {
@@ -44,18 +39,16 @@ export default function AppointmentCard({
   onReschedule,
   onCancel,
 }: AppointmentCardProps) {
-  // Prefer the stored pet image from backend; fall back to species-based default
   const resolvedPetImageUrl = getPetImageUrl(appointment.petImageUrl);
-  const petImg = resolvedPetImageUrl || getDefaultPetImage(appointment.petSpecies);
   const doctorImg = appointment.doctorImageUrl || "/vet-expert.png";
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm border-l-4 border-l-blue-500">
-      {/* Pet avatar */}
+      {/* Pet avatar — uploaded image or first-letter fallback */}
       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100 flex items-center justify-center">
-        {petImg ? (
+        {resolvedPetImageUrl ? (
           <Image
-            src={petImg}
+            src={resolvedPetImageUrl}
             alt={appointment.petName}
             fill
             className="object-cover"
@@ -66,7 +59,6 @@ export default function AppointmentCard({
           </span>
         )}
       </div>
-
 
       {/* Pet & Doctor info */}
       <div className="flex-1 min-w-0">
@@ -91,30 +83,21 @@ export default function AppointmentCard({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">{appointment.doctorName}</p>
-            <p className="text-xs text-slate-400">Veterinarian</p>
           </div>
         </div>
       </div>
 
-      {/* Date / time */}
+      {/* Date / time — shown once */}
       <div className="shrink-0 text-right">
-        <p className="text-sm font-semibold text-slate-900">
-          {formatDate(appointment.appointmentDate)}{" "}
-          <span className="font-normal text-slate-600">
-            {formatTime(appointment.appointmentTime)}
-          </span>
-        </p>
-        <div className="mt-1 flex items-center justify-end gap-1.5 text-xs text-slate-500">
-          <svg className="h-3.5 w-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center justify-end gap-1.5 text-sm font-semibold text-slate-900">
+          <svg className="h-4 w-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span>
-            {formatDate(appointment.appointmentDate)}
-          </span>
+          <span>{formatDate(appointment.appointmentDate)}</span>
         </div>
-        {variant === "upcoming" && formatTime(appointment.appointmentTime) && (
-          <p className="text-xs text-slate-500 text-right">
+        {formatTime(appointment.appointmentTime) && (
+          <p className="mt-0.5 text-sm font-normal text-slate-600 text-right">
             {formatTime(appointment.appointmentTime)}
           </p>
         )}

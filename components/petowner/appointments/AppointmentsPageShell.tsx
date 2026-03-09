@@ -12,6 +12,7 @@ import AppointmentsFilterBar, {
 import AppointmentsList from "./AppointmentsList";
 import BookingModal from "../booking/BookingModal";
 import CancelConfirmModal from "./CancelConfirmModal";
+import RescheduleModal from "./RescheduleModal";
 
 const PAGE_SIZE = 5;
 
@@ -27,15 +28,11 @@ export default function AppointmentsPageShell() {
   const [filters, setFilters] = useState<AppointmentFilters>({
     petId: "",
     doctorName: "",
-    dateFrom: "",
-    dateTo: "",
     search: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<AppointmentFilters>({
     petId: "",
     doctorName: "",
-    dateFrom: "",
-    dateTo: "",
     search: "",
   });
   const [upcomingPage, setUpcomingPage] = useState(1);
@@ -44,6 +41,7 @@ export default function AppointmentsPageShell() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<{ id: number; petName: string } | null>(null);
 
   // ── fetch data ──
   const loadData = useCallback(async () => {
@@ -100,8 +98,6 @@ export default function AppointmentsPageShell() {
       return list.filter((a) => {
         if (f.petId && String(a.petId) !== f.petId) return false;
         if (f.doctorName && a.doctorName !== f.doctorName) return false;
-        if (f.dateFrom && a.appointmentDate < f.dateFrom) return false;
-        if (f.dateTo && a.appointmentDate > f.dateTo) return false;
         if (f.search) {
           const q = f.search.toLowerCase();
           const hay = `${a.petName} ${a.doctorName} ${a.petBreed || ""} ${a.reason || ""}`.toLowerCase();
@@ -178,9 +174,9 @@ export default function AppointmentsPageShell() {
     if (!isCancelling) setCancelTargetId(null);
   };
 
-  const handleReschedule = (_id: number) => {
-    // Open booking modal (could be enhanced to pre-fill with existing data)
-    setIsBookingModalOpen(true);
+  const handleReschedule = (id: number) => {
+    const apt = appointments.find((a) => a.id === id);
+    setRescheduleTarget({ id, petName: apt?.petName || "Pet" });
   };
 
   // ── render ──
@@ -291,6 +287,19 @@ export default function AppointmentsPageShell() {
         onClose={handleCloseCancelModal}
         isCancelling={isCancelling}
       />
+
+      {/* Reschedule modal */}
+      {rescheduleTarget && (
+        <RescheduleModal
+          appointmentId={rescheduleTarget.id}
+          petName={rescheduleTarget.petName}
+          onClose={() => setRescheduleTarget(null)}
+          onSuccess={() => {
+            setRescheduleTarget(null);
+            loadData();
+          }}
+        />
+      )}
     </>
   );
 }
