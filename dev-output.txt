@@ -1,0 +1,32 @@
+⚠ Invalid next.config.ts options detected: 
+⚠     Expected object, received boolean at "turbopack"
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 867ms
+Persisting failed: Unable to write SST file 00000017.sst
+
+Caused by:
+    The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (6628) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <FileSource as Asset>::content (TaskId 188))
+
+Caused by:
+    0: Looking up data for TaskId 188 from database failed
+    1: Unable to open static sorted file referenced from 00000016.meta
+    2: Unable to open static sorted file 00000012.sst
+    3: The system cannot find the path specified. (os error 3)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 942ms
