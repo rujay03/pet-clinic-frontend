@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiFetch } from "@/lib/api";
+import Image from "next/image";
+import { apiFetch, getPetImageUrl } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Pet } from "@/types/pet";
 
@@ -164,6 +165,27 @@ export default function PetRecordShell() {
           Patient Information
         </h2>
         <div className="rounded-lg border border-gray-200 bg-white p-6">
+          {/* Pet avatar */}
+          <div className="mb-6 flex items-center gap-4">
+            <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shrink-0">
+              {getPetImageUrl(selectedPet.imageUrl) ? (
+                <Image
+                  src={getPetImageUrl(selectedPet.imageUrl)!}
+                  alt={selectedPet.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-blue-500">
+                  {selectedPet.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">{selectedPet.name}</h3>
+              <p className="text-sm text-gray-500">{selectedPet.species}{selectedPet.breed ? ` · ${selectedPet.breed}` : ""}</p>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-x-8 gap-y-6">
             <div>
               <p className="text-xs font-medium text-gray-500">Name</p>

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import { getPetImageUrl } from "@/lib/api";
 import type { Pet } from "@/types/pet";
 
 interface PetCardProps {
@@ -9,24 +11,7 @@ interface PetCardProps {
 }
 
 export default function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
-  const getPetIcon = (species: string) => {
-    const speciesLower = species.toLowerCase();
-    if (speciesLower.includes("dog")) {
-      return "🐕";
-    } else if (speciesLower.includes("cat")) {
-      return "🐈";
-    } else if (speciesLower.includes("bird")) {
-      return "🐦";
-    } else if (speciesLower.includes("rabbit")) {
-      return "🐰";
-    } else if (speciesLower.includes("fish")) {
-      return "🐠";
-    } else if (speciesLower.includes("hamster") || speciesLower.includes("guinea")) {
-      return "🐹";
-    } else {
-      return "🐾";
-    }
-  };
+  const petImageSrc = getPetImageUrl(pet.imageUrl);
 
   const getSexColor = (sex: string) => {
     switch (sex) {
@@ -55,8 +40,20 @@ export default function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center text-3xl">
-            {getPetIcon(pet.species)}
+          {/* Pet avatar: real image or first-letter fallback */}
+          <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shrink-0">
+            {petImageSrc ? (
+              <Image
+                src={petImageSrc}
+                alt={pet.name}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <span className="text-2xl font-bold text-blue-500">
+                {pet.name.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
           <div>
             <h3 className="text-xl font-bold text-gray-900">{pet.name}</h3>
@@ -181,4 +178,3 @@ export default function PetCard({ pet, onEdit, onDelete }: PetCardProps) {
     </div>
   );
 }
-

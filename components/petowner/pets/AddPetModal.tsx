@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { apiFetch } from "@/lib/api";
-import type { CreatePetRequest } from "@/types/pet";
+import { useState, FormEvent, useRef } from "react";
+import Image from "next/image";
+import { apiFetchMultipart } from "@/lib/api";
+import type { Pet } from "@/types/pet";
 
 interface AddPetModalProps {
   onClose: () => void;
@@ -12,14 +13,43 @@ interface AddPetModalProps {
 export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CreatePetRequest>({
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState({
     name: "",
     species: "",
     breed: "",
-    sex: "UNKNOWN",
+    sex: "UNKNOWN" as "MALE" | "FEMALE" | "UNKNOWN",
     dateOfBirth: "",
     notes: "",
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Only JPG, JPEG, and PNG images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5 MB.");
+      return;
+    }
+
+    setError(null);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,18 +57,16 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
     setLoading(true);
 
     try {
-      const payload: CreatePetRequest = {
-        ...formData,
-        breed: formData.breed || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        notes: formData.notes || undefined,
-      };
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("species", formData.species);
+      if (formData.breed) fd.append("breed", formData.breed);
+      fd.append("sex", formData.sex);
+      if (formData.dateOfBirth) fd.append("dateOfBirth", formData.dateOfBirth);
+      if (formData.notes) fd.append("notes", formData.notes);
+      if (imageFile) fd.append("image", imageFile);
 
-      await apiFetch("/api/pets", {
-        method: "POST",
-        body: payload,
-      });
-
+      await apiFetchMultipart<Pet>("/api/pets", "POST", fd);
       onSuccess();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to add pet");
@@ -81,6 +109,60 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
             </div>
           )}
 
+          {/* Pet Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Pet Photo
+            </label>
+            <div className="flex items-center gap-4">
+              {/* Preview / Placeholder */}
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shrink-0">
+                {imagePreview ? (
+                  <Image
+                    src={imagePreview}
+                    alt="Pet preview"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-blue-400">
+                    {formData.name ? formData.name.charAt(0).toUpperCase() : "🐾"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-blue-50 border border-blue-300 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  {imagePreview ? "Change Photo" : "Upload Photo"}
+                </button>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                  >
+                    Remove Photo
+                  </button>
+                )}
+                <p className="text-xs text-gray-500">
+                  JPG, JPEG or PNG · Max 5 MB
+                </p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           {/* Pet Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -111,7 +193,9 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             >
-              <option value="" className="text-black">Select species</option>
+              <option value="" className="text-black">
+                Select species
+              </option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
               <option value="Bird">Bird</option>
@@ -145,54 +229,28 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
               Sex <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="MALE"
-                  checked={formData.sex === "MALE"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700">Male</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="FEMALE"
-                  checked={formData.sex === "FEMALE"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-pink-600"
-                />
-                <span className="text-sm text-gray-700">Female</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="UNKNOWN"
-                  checked={formData.sex === "UNKNOWN"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-gray-600"
-                />
-                <span className="text-sm text-gray-700">Unknown</span>
-              </label>
+              {(["MALE", "FEMALE", "UNKNOWN"] as const).map((s) => (
+                <label key={s} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="sex"
+                    value={s}
+                    checked={formData.sex === s}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
+                      })
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {s === "UNKNOWN"
+                      ? "Unknown"
+                      : s.charAt(0) + s.slice(1).toLowerCase()}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 
@@ -251,4 +309,3 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
     </div>
   );
 }
-

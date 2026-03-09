@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { apiFetch } from "@/lib/api";
+import { useState, FormEvent, useRef } from "react";
+import Image from "next/image";
+import { apiFetchMultipart, getPetImageUrl } from "@/lib/api";
 import type { Pet, UpdatePetRequest } from "@/types/pet";
 
 interface EditPetModalProps {
@@ -17,6 +18,13 @@ export default function EditPetModal({
 }: EditPetModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    getPetImageUrl(pet.imageUrl)
+  );
+  const [removeImage, setRemoveImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState<UpdatePetRequest>({
     name: pet.name,
     species: pet.species,
@@ -26,24 +34,50 @@ export default function EditPetModal({
     notes: pet.notes || "",
   });
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Only JPG, JPEG, and PNG images are allowed.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5 MB.");
+      return;
+    }
+
+    setError(null);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setRemoveImage(false);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const payload: UpdatePetRequest = {
-        ...formData,
-        breed: formData.breed || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        notes: formData.notes || undefined,
-      };
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("species", formData.species);
+      if (formData.breed) fd.append("breed", formData.breed);
+      fd.append("sex", formData.sex);
+      if (formData.dateOfBirth) fd.append("dateOfBirth", formData.dateOfBirth);
+      if (formData.notes) fd.append("notes", formData.notes);
+      if (imageFile) fd.append("image", imageFile);
+      if (removeImage) fd.append("removeImage", "true");
 
-      await apiFetch(`/api/pets/${pet.id}`, {
-        method: "PUT",
-        body: payload,
-      });
-
+      await apiFetchMultipart<Pet>(`/api/pets/${pet.id}`, "PUT", fd);
       onSuccess();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update pet");
@@ -86,6 +120,57 @@ export default function EditPetModal({
             </div>
           )}
 
+          {/* Pet Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Pet Photo
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shrink-0">
+                {imagePreview ? (
+                  <Image
+                    src={imagePreview}
+                    alt="Pet preview"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-bold text-blue-400">
+                    {formData.name ? formData.name.charAt(0).toUpperCase() : "🐾"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-blue-50 border border-blue-300 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                >
+                  {imagePreview ? "Change Photo" : "Upload Photo"}
+                </button>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                  >
+                    Remove Photo
+                  </button>
+                )}
+                <p className="text-xs text-gray-500">JPG, JPEG or PNG · Max 5 MB</p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+
           {/* Pet Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -116,7 +201,9 @@ export default function EditPetModal({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             >
-              <option value="" className="text-black">Select species</option>
+              <option value="" className="text-black">
+                Select species
+              </option>
               <option value="Dog">Dog</option>
               <option value="Cat">Cat</option>
               <option value="Bird">Bird</option>
@@ -150,54 +237,28 @@ export default function EditPetModal({
               Sex <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="MALE"
-                  checked={formData.sex === "MALE"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700">Male</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="FEMALE"
-                  checked={formData.sex === "FEMALE"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-pink-600"
-                />
-                <span className="text-sm text-gray-700">Female</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="sex"
-                  value="UNKNOWN"
-                  checked={formData.sex === "UNKNOWN"}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
-                    })
-                  }
-                  className="w-4 h-4 text-gray-600"
-                />
-                <span className="text-sm text-gray-700">Unknown</span>
-              </label>
+              {(["MALE", "FEMALE", "UNKNOWN"] as const).map((s) => (
+                <label key={s} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="sex"
+                    value={s}
+                    checked={formData.sex === s}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sex: e.target.value as "MALE" | "FEMALE" | "UNKNOWN",
+                      })
+                    }
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {s === "UNKNOWN"
+                      ? "Unknown"
+                      : s.charAt(0) + s.slice(1).toLowerCase()}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 

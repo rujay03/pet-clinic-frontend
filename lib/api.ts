@@ -26,7 +26,7 @@ export async function apiFetch<TResponse>(
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
-    credentials: "include", // 🔑 keep session cookie
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(headers || {}),
@@ -36,23 +36,64 @@ export async function apiFetch<TResponse>(
   });
 
   const text = await response.text();
-let data: any = null;
+  let data: any = null;
 
-try {
-  data = text ? JSON.parse(text) : null;
-} catch {
-  // if it's not JSON, just keep the raw text
-  data = text;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    const message =
+      (data && (data.message || data.error)) ||
+      (typeof data === "string" ? data : "") ||
+      `Request failed with status ${response.status}`;
+    throw new ApiError(response.status, message, data);
+  }
+
+  return data as TResponse;
 }
 
-if (!response.ok) {
-  const message =
-    (data && (data.message || data.error)) ||
-    (typeof data === "string" ? data : "") ||
-    `Request failed with status ${response.status}`;
-  throw new ApiError(response.status, message, data);
+/** For multipart/form-data requests (file uploads) — do NOT set Content-Type manually */
+export async function apiFetchMultipart<TResponse>(
+  path: string,
+  method: "POST" | "PUT",
+  formData: FormData
+): Promise<TResponse> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    credentials: "include",
+    body: formData,
+    // Do NOT set Content-Type header — browser sets it with boundary automatically
+  });
+
+  const text = await response.text();
+  let data: any = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    const message =
+      (data && (data.message || data.error)) ||
+      (typeof data === "string" ? data : "") ||
+      `Request failed with status ${response.status}`;
+    throw new ApiError(response.status, message, data);
+  }
+
+  return data as TResponse;
 }
 
-return data as TResponse;
-
+export function getPetImageUrl(imageUrl?: string | null): string | null {
+  if (!imageUrl) return null;
+  // If it's already a full URL, return as-is
+  if (imageUrl.startsWith("http")) return imageUrl;
+  // Otherwise prepend API base URL
+  return `${API_BASE_URL}${imageUrl}`;
 }
+
+

@@ -7,6 +7,7 @@ export interface Pet {
   dateOfBirth?: string;
   age?: number;
   notes?: string;
+  imageUrl?: string;
   createdAt: string;
 }
 

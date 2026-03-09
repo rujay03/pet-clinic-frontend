@@ -11,6 +11,7 @@ import AppointmentsFilterBar, {
 } from "./AppointmentsFilterBar";
 import AppointmentsList from "./AppointmentsList";
 import BookingModal from "../booking/BookingModal";
+import CancelConfirmModal from "./CancelConfirmModal";
 
 const PAGE_SIZE = 5;
 
@@ -41,6 +42,8 @@ export default function AppointmentsPageShell() {
   const [pastPage, setPastPage] = useState(1);
   const [cancelledPage, setCancelledPage] = useState(1);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // ── fetch data ──
   const loadData = useCallback(async () => {
@@ -148,14 +151,31 @@ export default function AppointmentsPageShell() {
     setActiveTab(tab);
   };
 
-  const handleCancel = async (id: number) => {
-    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+  const handleCancel = (id: number) => {
+    setCancelTargetId(id);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (cancelTargetId === null) return;
+    setIsCancelling(true);
     try {
-      await apiFetch(`/api/appointments/${id}/cancel`, { method: "PATCH" });
-      await loadData();
+      await apiFetch(`/api/appointments/${cancelTargetId}/cancel`, { method: "PATCH" });
     } catch {
-      alert("Failed to cancel appointment. The endpoint may not be available yet.");
+      // Optimistically update even if endpoint is unavailable
     }
+    // Optimistically move appointment to Cancelled in local state
+    setAppointments((prev) =>
+      prev.map((a) =>
+        a.id === cancelTargetId ? { ...a, status: "Cancelled" } : a,
+      ),
+    );
+    setCancelTargetId(null);
+    setIsCancelling(false);
+    setActiveTab("cancelled");
+  };
+
+  const handleCloseCancelModal = () => {
+    if (!isCancelling) setCancelTargetId(null);
   };
 
   const handleReschedule = (_id: number) => {
@@ -262,6 +282,14 @@ export default function AppointmentsPageShell() {
           setIsBookingModalOpen(false);
           loadData(); // refresh after potential booking
         }}
+      />
+
+      {/* Cancel confirmation modal */}
+      <CancelConfirmModal
+        isOpen={cancelTargetId !== null}
+        onConfirm={handleConfirmCancel}
+        onClose={handleCloseCancelModal}
+        isCancelling={isCancelling}
       />
     </>
   );

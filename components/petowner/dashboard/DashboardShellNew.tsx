@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getPetImageUrl } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Pet } from "@/types/pet";
 import type {
@@ -77,9 +77,9 @@ function PetCard({
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex items-start gap-3">
-        {pet.imageUrl ? (
+        {getPetImageUrl(pet.imageUrl) ? (
           <Image
-            src={pet.imageUrl}
+            src={getPetImageUrl(pet.imageUrl)!}
             alt={pet.name}
             width={48}
             height={48}
@@ -302,7 +302,7 @@ export default function DashboardShell() {
         lastVisit: undefined, // Will be populated when we have visit data
         vaccinationStatus: "Valid" as const, // Default, will be updated with real data
         rabiesStatus: undefined,
-        imageUrl: undefined,
+        imageUrl: pet.imageUrl, // pass through the actual image URL from API
       }));
 
       setPets(dashboardPets);

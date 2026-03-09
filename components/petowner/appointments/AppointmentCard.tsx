@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { getPetImageUrl } from "@/lib/api";
 import type { Appointment } from "@/types/appointment";
 
 interface AppointmentCardProps {
@@ -11,7 +12,7 @@ interface AppointmentCardProps {
 }
 
 /** Pick a default pet avatar based on species */
-function getPetImage(species?: string) {
+function getDefaultPetImage(species?: string) {
   if (species?.toLowerCase() === "cat") return "/cat-image.png";
   return "/dog.png";
 }
@@ -43,20 +44,29 @@ export default function AppointmentCard({
   onReschedule,
   onCancel,
 }: AppointmentCardProps) {
-  const petImg = appointment.petImageUrl || getPetImage(appointment.petSpecies);
+  // Prefer the stored pet image from backend; fall back to species-based default
+  const resolvedPetImageUrl = getPetImageUrl(appointment.petImageUrl);
+  const petImg = resolvedPetImageUrl || getDefaultPetImage(appointment.petSpecies);
   const doctorImg = appointment.doctorImageUrl || "/vet-expert.png";
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm border-l-4 border-l-blue-500">
       {/* Pet avatar */}
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
-        <Image
-          src={petImg}
-          alt={appointment.petName}
-          fill
-          className="object-cover"
-        />
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100 flex items-center justify-center">
+        {petImg ? (
+          <Image
+            src={petImg}
+            alt={appointment.petName}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <span className="text-2xl font-bold text-slate-500">
+            {appointment.petName.charAt(0).toUpperCase()}
+          </span>
+        )}
       </div>
+
 
       {/* Pet & Doctor info */}
       <div className="flex-1 min-w-0">
