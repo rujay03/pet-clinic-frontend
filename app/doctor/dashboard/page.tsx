@@ -1,12 +1,201 @@
 // app/doctor/dashboard/page.tsx
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
-import DoctorShell from "@/components/doctor/DoctorShell";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  BarChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  ComposedChart,
+} from "recharts";
+import type { PieLabelRenderProps } from "recharts";
 
+/* ─── MOCK DATA ─── */
+const trendData = [
+  { day: "Mon", appointments: 18, trend: 20 },
+  { day: "Tue", appointments: 22, trend: 19 },
+  { day: "Wed", appointments: 15, trend: 22 },
+  { day: "Thu", appointments: 28, trend: 25 },
+  { day: "Fri", appointments: 20, trend: 23 },
+  { day: "Sat", appointments: 30, trend: 28 },
+  { day: "Sun", appointments: 25, trend: 26 },
+];
+
+const vaccinationData = [
+  { name: "Rabies", value: 45, color: "#3B4CC0" },
+  { name: "Distemper", value: 30, color: "#5EC4B6" },
+  { name: "Parvovirus", value: 15, color: "#7BC67E" },
+  { name: "Others", value: 10, color: "#E0DFF0" },
+];
+
+const patientVisitsData = [
+  { day: "1", visits: 10 },
+  { day: "2", visits: 8 },
+  { day: "3", visits: 12 },
+  { day: "4", visits: 15 },
+  { day: "5", visits: 25 },
+  { day: "6", visits: 18 },
+  { day: "7", visits: 22 },
+  { day: "8", visits: 28 },
+  { day: "9", visits: 20 },
+  { day: "10", visits: 30 },
+  { day: "11", visits: 26 },
+  { day: "13", visits: 12 },
+  { day: "15", visits: 35 },
+  { day: "15", visits: 28 },
+  { day: "21", visits: 22 },
+  { day: "31", visits: 18 },
+];
+
+const appointmentOverviewData = [
+  { day: "1", scheduled: 18, pending: 8, cancelled: 3 },
+  { day: "2", scheduled: 14, pending: 6, cancelled: 2 },
+  { day: "3", scheduled: 20, pending: 10, cancelled: 4 },
+  { day: "4", scheduled: 16, pending: 7, cancelled: 2 },
+  { day: "5", scheduled: 22, pending: 9, cancelled: 3 },
+  { day: "6", scheduled: 12, pending: 5, cancelled: 2 },
+  { day: "7", scheduled: 25, pending: 11, cancelled: 4 },
+  { day: "8", scheduled: 18, pending: 8, cancelled: 3 },
+  { day: "9", scheduled: 28, pending: 12, cancelled: 5 },
+  { day: "10", scheduled: 20, pending: 9, cancelled: 3 },
+  { day: "11", scheduled: 24, pending: 10, cancelled: 4 },
+  { day: "22", scheduled: 15, pending: 6, cancelled: 2 },
+  { day: "23", scheduled: 30, pending: 13, cancelled: 5 },
+  { day: "31", scheduled: 22, pending: 10, cancelled: 3 },
+];
+
+const treatmentTypes = [
+  { name: "Skin Allergy Treatment", percentage: 35, color: "#4361EE" },
+  { name: "Dental Cleaning", percentage: 20, color: "#3ECFB4" },
+  { name: "Ear Infection Therapy", percentage: 18, color: "#6BCB77" },
+  { name: "Wound Care", percentage: 15, color: "#F5C842" },
+  { name: "Other", percentage: 30, color: "#EDE9B1" },
+];
+
+const upcomingPatients = [
+  { petName: "Toby", ownerName: "Saran Miller", avatar: "🐶" },
+  { petName: "Luna", ownerName: "James Turner", avatar: "🐱" },
+  { petName: "Max", ownerName: "Emily Watson", avatar: "🐕" },
+  { petName: "Bella", ownerName: "Michael Brown", avatar: "🐶" },
+];
+
+/* ─── CUSTOM PIE LABEL ─── */
+const renderCustomLabel = (props: PieLabelRenderProps) => {
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
+  const cxNum = Number(cx ?? 0);
+  const cyNum = Number(cy ?? 0);
+  const midAngleNum = Number(midAngle ?? 0);
+  const innerR = Number(innerRadius ?? 0);
+  const outerR = Number(outerRadius ?? 0);
+  const pct = Number(percent ?? 0);
+  const RADIAN = Math.PI / 180;
+  const radius = innerR + (outerR - innerR) * 0.5;
+  const x = cxNum + radius * Math.cos(-midAngleNum * RADIAN);
+  const y = cyNum + radius * Math.sin(-midAngleNum * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={12}
+      fontWeight={600}
+    >
+      {`${(pct * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+/* ─── TOP NAVIGATION BAR ─── */
+function TopNavBar({ userEmail }: { userEmail: string }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const navLinks = [
+    { name: "Dashboard", href: "/doctor/dashboard" },
+    { name: "Appointments", href: "/doctor/appointments" },
+    { name: "Pets", href: "/doctor/manage-pets" },
+  ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      localStorage.removeItem("token");
+      router.push("/doctor/login");
+    }
+  };
+
+  return (
+    <nav className="bg-[#2D2B6B] text-white px-6 py-3 flex items-center justify-between">
+      {/* Left: Logo + Nav links */}
+      <div className="flex items-center gap-8">
+        {/* Logo */}
+        <Link href="/doctor/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+            </svg>
+          </div>
+          <span className="text-lg font-bold tracking-wide">PetCore</span>
+        </Link>
+
+        {/* Nav Links */}
+        <div className="flex items-center gap-6">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative pb-1 text-sm font-medium transition-colors ${
+                  isActive ? "text-white" : "text-white/70 hover:text-white"
+                }`}
+              >
+                {link.name}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-400 rounded-full" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Right: User info + Logout */}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-white/90">
+          Hello Dr. {userEmail?.split("@")[0] || "John Adams"}
+        </span>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-1.5 text-sm font-medium border border-white/40 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          Log out
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+/* ─── MAIN PAGE ─── */
 export default function DoctorDashboardPage() {
   const { user } = useAuth();
+  const [trendTab, setTrendTab] = useState<"7d" | "30d" | "year">("7d");
 
   if (!user) {
     return null;
@@ -14,203 +203,306 @@ export default function DoctorDashboardPage() {
 
   return (
     <ProtectedRoute allowedRoles={["DOCTOR"]}>
-      <DoctorShell userEmail={user.email}>
-      <div className="max-w-7xl">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Dashboard</h1>
-        <p className="text-slate-600 mb-8">Welcome to the doctor portal</p>
+      <div className="min-h-screen bg-[#EDEAF4]">
+        {/* Top Navigation */}
+        <TopNavBar userEmail={user.email} />
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-slate-600 font-medium">Total Appointments</h3>
-              <svg
-                className="w-8 h-8 text-indigo-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">124</p>
-            <p className="text-sm text-green-600 mt-2">+12% from last month</p>
+        {/* Main Content */}
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
+          {/* Page Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-slate-900">Doctor Dashboard</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Overview of clinic performance and patient statistics.
+            </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-slate-600 font-medium">Pending</h3>
-              <svg
-                className="w-8 h-8 text-orange-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">23</p>
-            <p className="text-sm text-slate-600 mt-2">Awaiting confirmation</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-slate-600 font-medium">Completed</h3>
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-slate-900">101</p>
-            <p className="text-sm text-slate-600 mt-2">Successfully treated</p>
-          </div>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Appointments Trend Chart */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Appointments Trend
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">Last 7 days</p>
-            <div className="h-64 flex items-end justify-between gap-2">
-              {[45, 52, 38, 65, 48, 73, 60].map((height, idx) => (
-                <div key={idx} className="flex-1 flex flex-col items-center">
-                  <div
-                    className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-lg transition-all hover:from-indigo-700 hover:to-indigo-500"
-                    style={{ height: `${height}%` }}
-                  ></div>
-                  <span className="text-xs text-slate-500 mt-2">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][idx]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Status Distribution */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Appointment Status Distribution
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">Current month</p>
-            <div className="flex items-center justify-center h-64">
-              <div className="relative w-48 h-48">
-                {/* Pie Chart using conic-gradient */}
-                <div
-                  className="w-full h-full rounded-full"
-                  style={{
-                    background: `conic-gradient(
-                      #10b981 0deg 180deg,
-                      #f59e0b 180deg 270deg,
-                      #ef4444 270deg 360deg
-                    )`,
-                  }}
-                ></div>
-                {/* Center circle */}
-                <div className="absolute inset-0 m-auto w-24 h-24 bg-white rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-slate-800">124</span>
-                </div>
+          {/* KPI Cards Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Total Appointments */}
+            <div className="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-base font-bold text-slate-900">Total</p>
+                <p className="text-sm text-slate-500">Appointments</p>
+              </div>
+              <div className="ml-auto text-right">
+                <span className="text-sm font-semibold text-green-500">+12</span>
+                <p className="text-xs text-slate-400">this week</p>
               </div>
             </div>
-            <div className="flex justify-center gap-6 mt-6">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-sm text-slate-600">Completed (62)</span>
+
+            {/* Consultations */}
+            <div className="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm text-slate-600">Pending (31)</span>
+              <div>
+                <p className="text-sm text-slate-500">Consultations</p>
+                <p className="text-2xl font-bold text-slate-900">65</p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <span className="text-sm text-slate-600">Cancelled (31)</span>
+              <div className="ml-auto text-right">
+                <p className="text-xs text-slate-400">today</p>
+              </div>
+            </div>
+
+            {/* Vaccinations */}
+            <div className="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900">24</p>
+                <p className="text-sm text-slate-500">Vaccinations</p>
+              </div>
+              <div className="ml-auto text-right">
+                <span className="text-sm font-semibold text-green-500">+1</span>
+                <p className="text-xs text-slate-400">today</p>
+              </div>
+            </div>
+
+            {/* Total Patients */}
+            <div className="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-slate-900">340</p>
+                <p className="text-sm text-slate-500">Total Patients</p>
+              </div>
+              <div className="ml-auto text-right">
+                <p className="text-sm font-semibold text-slate-700">
+                  T <span className="text-indigo-600">908</span>{" "}
+                  <span className="text-xs text-slate-400">↔</span>
+                </p>
+                <p className="text-xs text-slate-400">week</p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Recent Activity & Top Treatments */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Treatment Types Bar Chart */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Top Treatment Types
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">This month</p>
-            <div className="space-y-4">
-              {[
-                { name: "Vaccination", count: 45, color: "bg-blue-500" },
-                { name: "Routine Checkup", count: 38, color: "bg-green-500" },
-                { name: "Dental Care", count: 28, color: "bg-purple-500" },
-                { name: "Surgery", count: 15, color: "bg-red-500" },
-                { name: "Emergency Care", count: 12, color: "bg-orange-500" },
-              ].map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-medium text-slate-700">
-                      {item.name}
-                    </span>
-                    <span className="text-sm text-slate-500">{item.count}</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5">
-                    <div
-                      className={`${item.color} h-2.5 rounded-full transition-all`}
-                      style={{ width: `${(item.count / 45) * 100}%` }}
-                    ></div>
+          {/* Middle Row: Appointments Trends + Vaccination Types */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+            {/* Appointments Trends - Takes 3 columns */}
+            <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-900">Appointments Trends</h2>
+              </div>
+              {/* Tabs */}
+              <div className="flex items-center gap-1 mb-4">
+                {[
+                  { key: "7d" as const, label: "Last 7 Days" },
+                  { key: "30d" as const, label: "Last 30 Days" },
+                  { key: "year" as const, label: "This Year" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setTrendTab(tab.key)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      trendTab === tab.key
+                        ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
+                        : "text-slate-500 hover:bg-slate-100 border border-transparent"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                {/* Patient list - Left side */}
+                <div className="w-48 flex-shrink-0 space-y-3">
+                  {upcomingPatients.map((patient, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+                        {patient.avatar}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{patient.petName}</p>
+                        <p className="text-xs text-slate-400">{patient.ownerName}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Start button */}
+                  <button className="mt-2 px-4 py-1.5 text-sm font-medium text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors flex items-center gap-1">
+                    Start <span>›</span>
+                  </button>
+
+                  {/* Stats */}
+                  <div className="mt-3 space-y-1 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-red-500">780</span>
+                      <span className="text-slate-500">Scheduled</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-green-500">640</span>
+                      <span className="text-slate-500">Completed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-red-500">45</span>
+                      <span className="text-slate-500">Pending</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-red-500">95</span>
+                      <span className="text-slate-500">Cancelled</span>
+                    </div>
                   </div>
                 </div>
-              ))}
+
+                {/* Chart - Right side */}
+                <div className="flex-1 h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip />
+                      <Bar dataKey="appointments" fill="#C7D2FE" radius={[2, 2, 0, 0]} barSize={20} />
+                      <Line type="monotone" dataKey="trend" stroke="#4361EE" strokeWidth={2} dot={{ r: 4, fill: "#fff", stroke: "#4361EE", strokeWidth: 2 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Vaccination Types - Takes 2 columns */}
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Vaccination Types</h2>
+              <div className="flex items-center gap-4">
+                {/* Pie Chart */}
+                <div className="w-44 h-44 flex-shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={vaccinationData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={0}
+                        outerRadius={70}
+                        dataKey="value"
+                        labelLine={false}
+                        label={renderCustomLabel}
+                      >
+                        {vaccinationData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend - middle */}
+                <div className="space-y-2 text-xs">
+                  {vaccinationData.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-slate-600">{item.name}</span>
+                      <span className="text-slate-400">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Table - right */}
+                <div className="ml-auto space-y-2 text-xs">
+                  {vaccinationData.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded flex-shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="text-slate-700 font-medium">{item.name}</span>
+                      </div>
+                      <span className="font-bold text-slate-800">{item.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Patient Visits Timeline */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">
-              Daily Patient Visits
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">Average per day</p>
-            <div className="h-64 flex items-end justify-between gap-1">
-              {[
-                12, 15, 18, 14, 20, 16, 22, 19, 25, 21, 17, 23, 20, 18, 24, 22,
-                19, 26, 23, 20, 28, 24, 21, 27, 25, 22, 29, 26, 23, 30,
-              ].map((value, idx) => (
-                <div
-                  key={idx}
-                  className="flex-1 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t hover:from-purple-700 hover:to-purple-500 transition-all"
-                  style={{ height: `${(value / 30) * 100}%` }}
-                  title={`${value} patients`}
-                ></div>
-              ))}
+          {/* Bottom Row: Patient Visits + Appointment Overview + Top Treatment Types */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Patient Visits This Month */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-900 mb-4">Patient Visits This Month</h2>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={patientVisitsData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="visits" fill="#93C5FD" radius={[2, 2, 0, 0]} barSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="flex justify-between mt-4 text-xs text-slate-500">
-              <span>30 days ago</span>
-              <span>Today</span>
+
+            {/* Appointment Overview */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-900 mb-2">Appointment Overview</h2>
+              {/* Legend */}
+              <div className="flex items-center gap-3 mb-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-[#6366F1]" />
+                  <span className="text-slate-500">Scheduled</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-[#6BCB77]" />
+                  <span className="text-slate-500">35%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">Pending</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-[#EF4444]" />
+                  <span className="text-slate-500">9%</span>
+                </div>
+                <span className="text-slate-500 text-xs">8%</span>
+              </div>
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={appointmentOverviewData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="scheduled" stackId="a" fill="#6366F1" radius={[0, 0, 0, 0]} barSize={14} />
+                    <Bar dataKey="pending" stackId="a" fill="#6BCB77" barSize={14} />
+                    <Bar dataKey="cancelled" stackId="a" fill="#EF4444" radius={[2, 2, 0, 0]} barSize={14} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Treatment Types */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h2 className="text-base font-bold text-slate-900 mb-4">Top Treatment Types</h2>
+              <div className="space-y-4">
+                {treatmentTypes.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3.5 h-3.5 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
+                      <span className="text-sm text-slate-700">{item.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-800">{item.percentage}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-        </div>
-      </DoctorShell>
+      </div>
     </ProtectedRoute>
   );
 }
+
+
