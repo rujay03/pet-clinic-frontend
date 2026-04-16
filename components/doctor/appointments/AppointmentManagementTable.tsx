@@ -1,190 +1,410 @@
 // components/doctor/appointments/AppointmentManagementTable.tsx
 "use client";
 
-import { useState } from "react";
-import type { Appointment } from "@/types/doctor";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
+import type {
+  DoctorAppointment,
+  DoctorAppointmentsPageResponse,
+  DoctorAppointmentTab,
+  DoctorTimeSlot,
+} from "@/types/doctor";
 import AppointmentRow from "./AppointmentRow";
 import Pagination from "./Pagination";
 
+const TAB_OPTIONS: Array<{ key: DoctorAppointmentTab; label: string }> = [
+  { key: "ALL", label: "All" },
+  { key: "TODAY", label: "Today" },
+  { key: "UPCOMING", label: "Upcoming" },
+  { key: "COMPLETED", label: "Completed" },
+];
+
+const todayIso = new Date().toISOString().slice(0, 10);
+
+const formatDate = (isoDate: string) => {
+  const date = new Date(`${isoDate}T00:00:00`);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};
+
+const formatTime = (time: string) => {
+  const [hours = "00", minutes = "00"] = time.split(":");
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+};
+
 export default function AppointmentManagementTable() {
+  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [activeTab, setActiveTab] = useState<DoctorAppointmentTab>("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
-  // Mock data - replace with actual API call
-  const mockAppointments: Appointment[] = [
-    {
-      id: "1",
-      firstName: "Jane",
-      lastName: "Cooper",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "2",
-      firstName: "Wade",
-      lastName: "Warren",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Booked",
-    },
-    {
-      id: "3",
-      firstName: "Brooklyn",
-      lastName: "Simmons",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Completed",
-    },
-    {
-      id: "4",
-      firstName: "Cameron",
-      lastName: "Williamson",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "5",
-      firstName: "Leslie",
-      lastName: "Alexander",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "6",
-      firstName: "Savannah",
-      lastName: "Nguyen",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "7",
-      firstName: "Darlene",
-      lastName: "Robertson",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Completed",
-    },
-    {
-      id: "8",
-      firstName: "Ronald",
-      lastName: "Richards",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "9",
-      firstName: "Kathryn",
-      lastName: "Murphy",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13-Aug-2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-    {
-      id: "10",
-      firstName: "Darrell",
-      lastName: "Steward",
-      phoneNumber: "+91 9876543210",
-      petName: "Roxy",
-      appointmentDate: "13 Aug 2023",
-      appointmentTime: "10:00 AM",
-      status: "Open",
-    },
-  ];
+  const [slotDate, setSlotDate] = useState(todayIso);
+  const [slotStart, setSlotStart] = useState("10:00");
+  const [slotEnd, setSlotEnd] = useState("10:30");
+  const [slots, setSlots] = useState<DoctorTimeSlot[]>([]);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [slotBusy, setSlotBusy] = useState(false);
 
-  const totalPages = Math.ceil(mockAppointments.length / itemsPerPage);
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearchText(searchInput.trim());
+      setCurrentPage(1);
+    }, 350);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  const loadAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams({
+      tab: activeTab,
+      page: String(currentPage - 1),
+      size: String(pageSize),
+    });
+    if (searchText) {
+      params.set("search", searchText);
+    }
+    if (filterDate) {
+      params.set("date", filterDate);
+    }
+
+    try {
+      const response = await apiFetch<DoctorAppointmentsPageResponse>(
+        `/api/appointments/doctor/my?${params.toString()}`,
+      );
+      setAppointments(response.content);
+      setTotalPages(Math.max(response.totalPages || 1, 1));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to load appointments.");
+      }
+      setAppointments([]);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, currentPage, pageSize, searchText, filterDate]);
+
+  const loadSlots = useCallback(async () => {
+    setSlotsError(null);
+    try {
+      const response = await apiFetch<DoctorTimeSlot[]>(
+        `/api/doctors/my/slots?date=${slotDate}`,
+      );
+      setSlots(response);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSlotsError(err.message);
+      } else {
+        setSlotsError("Failed to load time slots.");
+      }
+      setSlots([]);
+    }
+  }, [slotDate]);
+
+  useEffect(() => {
+    loadAppointments();
+  }, [loadAppointments]);
+
+  useEffect(() => {
+    loadSlots();
+  }, [loadSlots]);
+
+  const handleStatusAction = async (appointment: DoctorAppointment) => {
+    let nextStatus = "";
+    if (appointment.status === "Waiting") {
+      nextStatus = "IN_CONSULTATION";
+    } else if (appointment.status === "In Consultation") {
+      nextStatus = "COMPLETED";
+    }
+    if (!nextStatus) {
+      return;
+    }
+
+    setUpdatingId(appointment.id);
+    try {
+      await apiFetch(`/api/appointments/doctor/${appointment.id}/status`, {
+        method: "PATCH",
+        body: { status: nextStatus },
+      });
+      await loadAppointments();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to update appointment status.");
+      }
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const addSlot = async () => {
+    setSlotBusy(true);
+    setSlotsError(null);
+    try {
+      const response = await apiFetch<DoctorTimeSlot[]>("/api/doctors/my/slots", {
+        method: "POST",
+        body: {
+          date: slotDate,
+          startTime: `${slotStart}:00`,
+          endTime: `${slotEnd}:00`,
+        },
+      });
+      setSlots(response);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSlotsError(err.message);
+      } else {
+        setSlotsError("Failed to add slot.");
+      }
+    } finally {
+      setSlotBusy(false);
+    }
+  };
+
+  const removeSlot = async (slot: DoctorTimeSlot) => {
+    setSlotBusy(true);
+    setSlotsError(null);
+    try {
+      const params = new URLSearchParams({
+        date: slotDate,
+        startTime: slot.slotStart,
+        endTime: slot.slotEnd,
+      });
+      const response = await apiFetch<DoctorTimeSlot[]>(
+        `/api/doctors/my/slots?${params.toString()}`,
+        { method: "DELETE" },
+      );
+      setSlots(response);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSlotsError(err.message);
+      } else {
+        setSlotsError("Failed to remove slot.");
+      }
+    } finally {
+      setSlotBusy(false);
+    }
+  };
+
+  const sortedSlots = useMemo(
+    () => [...slots].sort((a, b) => a.slotStart.localeCompare(b.slotStart)),
+    [slots],
+  );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-      {/* Header */}
-      <div className="px-8 py-6 border-b border-slate-200">
-        <h1 className="text-2xl font-bold text-slate-800">
-          Appointment Management
-        </h1>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-200">
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                First Name
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Last Name
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Phone Number
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Pet Name
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Appointment Date & Time
-                <svg
-                  className="inline-block w-4 h-4 ml-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 11l5-5m0 0l5 5m-5-5v12"
-                  />
-                </svg>
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-8 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockAppointments.map((appointment, index) => (
-              <AppointmentRow
-                key={appointment.id}
-                appointment={appointment}
-                isLast={index === mockAppointments.length - 1}
+    <div className="space-y-5 rounded-2xl bg-white/50">
+      <div className="rounded-2xl border border-[#D7CEE8] bg-white/70 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative w-full lg:max-w-md">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
+            </svg>
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by Owner or Pet"
+              className="w-full rounded-lg border border-[#D7CEE8] bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {TAB_OPTIONS.map((tab) => (
+              <button
+                type="button"
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setCurrentPage(1);
+                }}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-indigo-100 text-indigo-700"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
-          </tbody>
-        </table>
+          </div>
+
+          <div className="lg:ml-auto">
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => {
+                setFilterDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="rounded-lg border border-[#D7CEE8] bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Pagination */}
-      <div className="px-8 py-4 border-t border-slate-200">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+      <div className="rounded-2xl border border-[#D7CEE8] bg-white/80 shadow-sm">
+        <div className="border-b border-slate-200/80 px-6 py-5">
+          <h2 className="text-[32px] font-semibold text-[#22195E]">Appointment Management</h2>
+        </div>
+
+        {error && (
+          <div className="mx-6 mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px]">
+            <thead>
+              <tr className="border-b border-slate-200/80 text-left text-xs font-semibold uppercase tracking-wider text-[#59529A]">
+                <th className="px-6 py-4">Owner Name</th>
+                <th className="px-6 py-4">Phone</th>
+                <th className="px-6 py-4">Pet Name</th>
+                <th className="px-6 py-4">Appointment Date &amp; Time</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
+                    Loading appointments...
+                  </td>
+                </tr>
+              ) : appointments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
+                    No appointments found for the selected filters.
+                  </td>
+                </tr>
+              ) : (
+                appointments.map((appointment, index) => (
+                  <AppointmentRow
+                    key={appointment.id}
+                    appointment={{
+                      ...appointment,
+                      appointmentDate: formatDate(appointment.appointmentDate),
+                      appointmentTime: formatTime(appointment.appointmentTime),
+                    }}
+                    isLast={index === appointments.length - 1}
+                    onStatusAction={handleStatusAction}
+                    isUpdating={updatingId === appointment.id}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="border-t border-slate-200/80 px-6 py-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        <div className="border-t border-slate-200/80 px-6 py-5">
+          <h3 className="text-2xl font-semibold text-[#22195E]">Add Appointment Time Slots</h3>
+
+          <div className="mt-4 grid gap-3 rounded-xl border border-[#D7CEE8] bg-white p-3 lg:grid-cols-[220px_170px_170px_140px_1fr] lg:items-center">
+            <input
+              type="date"
+              value={slotDate}
+              onChange={(e) => setSlotDate(e.target.value)}
+              className="rounded-lg border border-[#D7CEE8] px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+            <input
+              type="time"
+              value={slotStart}
+              onChange={(e) => setSlotStart(e.target.value)}
+              className="rounded-lg border border-[#D7CEE8] px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+            <input
+              type="time"
+              value={slotEnd}
+              onChange={(e) => setSlotEnd(e.target.value)}
+              className="rounded-lg border border-[#D7CEE8] px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+            <button
+              type="button"
+              onClick={addSlot}
+              disabled={slotBusy}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {slotBusy ? "Saving..." : "Add Slot"}
+            </button>
+
+            <div className="flex flex-wrap gap-2">
+              {sortedSlots.map((slot) => (
+                <span
+                  key={`${slot.slotStart}-${slot.slotEnd}`}
+                  className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm text-indigo-700"
+                >
+                  {formatTime(slot.slotStart)} - {formatTime(slot.slotEnd)}
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(slot)}
+                    disabled={slotBusy}
+                    className="rounded p-0.5 text-rose-600 hover:bg-rose-100"
+                    aria-label="Delete slot"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M18 6L6 18M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {slotsError && (
+            <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              {slotsError}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

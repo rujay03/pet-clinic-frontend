@@ -23,6 +23,7 @@ interface BookingData {
   // Date & Time
   selectedDate: Date | null;
   selectedTime: string;
+  doctorId?: string;
 
   // Payment
   paymentMethod: string;
@@ -54,6 +55,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     note: "",
     selectedDate: null,
     selectedTime: "",
+    doctorId: "",
     paymentMethod: "Credit Card",
     cardName: "",
     cardNumber: "",
@@ -85,6 +87,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           method: "POST",
           body: {
             petId: Number(merged.petId),
+            doctorId: merged.doctorId ? Number(merged.doctorId) : undefined,
             appointmentDate,
             appointmentTime,
             appointmentType: merged.appointmentType,
@@ -128,6 +131,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       note: "",
       selectedDate: null,
       selectedTime: "",
+      doctorId: "",
       paymentMethod: "Credit Card",
       cardName: "",
       cardNumber: "",

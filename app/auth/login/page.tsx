@@ -27,6 +27,12 @@ export default function LoginPage() {
         "Email verified successfully! You can now login to your account."
       );
     }
+
+    if (searchParams.get("passwordReset") === "true") {
+      setSuccessMessage(
+        "Password reset successful! Please login with your new password."
+      );
+    }
   }, [searchParams]);
 
   async function handleSubmit(e: FormEvent) {
@@ -177,12 +183,12 @@ export default function LoginPage() {
                   />
                   Remember password
                 </label>
-                <a
-                  href="#"
+                <Link
+                  href="/auth/forgot-password"
                   className="text-sm text-gray-600 hover:text-blue-600"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <button

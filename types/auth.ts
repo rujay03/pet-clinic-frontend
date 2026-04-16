@@ -42,3 +42,12 @@ export interface StaffSignupForm extends StaffSignupRequest {
   confirmPassword: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otpCode: string;
+  newPassword: string;
+}

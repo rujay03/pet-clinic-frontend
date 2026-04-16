@@ -208,10 +208,9 @@ export default function EditPetModal({
               <option value="Cat">Cat</option>
               <option value="Bird">Bird</option>
               <option value="Rabbit">Rabbit</option>
-              <option value="Hamster">Hamster</option>
-              <option value="Guinea Pig">Guinea Pig</option>
-              <option value="Fish">Fish</option>
-              <option value="Other">Other</option>
+              <option value="Cow">Cow</option>
+              <option value="Goat">Goat</option>
+              <option value="Pig">Pig</option>
             </select>
           </div>
 
@@ -237,7 +236,7 @@ export default function EditPetModal({
               Sex <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
-              {(["MALE", "FEMALE", "UNKNOWN"] as const).map((s) => (
+              {(["MALE", "FEMALE"] as const).map((s) => (
                 <label key={s} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
@@ -253,9 +252,7 @@ export default function EditPetModal({
                     className="w-4 h-4"
                   />
                   <span className="text-sm text-gray-700">
-                    {s === "UNKNOWN"
-                      ? "Unknown"
-                      : s.charAt(0) + s.slice(1).toLowerCase()}
+                    {s.charAt(0) + s.slice(1).toLowerCase()}
                   </span>
                 </label>
               ))}

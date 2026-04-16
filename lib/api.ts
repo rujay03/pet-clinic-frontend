@@ -18,13 +18,26 @@ export class ApiError extends Error {
   }
 }
 
+function buildApiUrl(path: string): string {
+  const trimmedBase = API_BASE_URL.replace(/\/$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  // Join then collapse accidental '/api/api/*' duplication.
+  // This supports all combinations:
+  // - base: http://localhost:8081        + path: /api/auth/login
+  // - base: http://localhost:8081/api    + path: /auth/login
+  // - base: http://localhost:8081/api    + path: /api/auth/login
+  const joined = `${trimmedBase}${normalizedPath}`;
+  return joined.replace(/\/api\/api(?=\/|$)/g, "/api");
+}
+
 export async function apiFetch<TResponse>(
   path: string,
   options: ApiFetchOptions = {}
 ): Promise<TResponse> {
   const { method = "GET", body, headers, ...rest } = options;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(path), {
     method,
     credentials: "include",
     headers: {
@@ -61,7 +74,7 @@ export async function apiFetchMultipart<TResponse>(
   method: "POST" | "PUT",
   formData: FormData
 ): Promise<TResponse> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildApiUrl(path), {
     method,
     credentials: "include",
     body: formData,
@@ -92,8 +105,5 @@ export function getPetImageUrl(imageUrl?: string | null): string | null {
   if (!imageUrl) return null;
   // If it's already a full URL, return as-is
   if (imageUrl.startsWith("http")) return imageUrl;
-  // Otherwise prepend API base URL
-  return `${API_BASE_URL}${imageUrl}`;
+  return buildApiUrl(imageUrl);
 }
-
-

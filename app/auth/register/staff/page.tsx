@@ -9,14 +9,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { validatePassword, formatPhoneNumber, getPasswordRequirements } from "@/lib/validation";
 
+interface StaffRegisterForm extends Omit<StaffSignupForm, "fullName"> {
+  firstName: string;
+  lastName: string;
+}
+
 export default function StaffRegisterPage() {
   const router = useRouter();
   const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [form, setForm] = useState<StaffSignupForm>({
+  const [form, setForm] = useState<StaffRegisterForm>({
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     contactNo: "",
     role: "DOCTOR",
   });
@@ -35,6 +41,8 @@ export default function StaffRegisterPage() {
     return getPasswordRequirements(form.password);
   }, [form.password]);
 
+  const fullName = `${form.firstName} ${form.lastName}`.trim();
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -49,8 +57,8 @@ export default function StaffRegisterPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (!form.fullName.trim()) {
-      setError("Full name is required.");
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("First name and last name are required.");
       return;
     }
 
@@ -61,7 +69,7 @@ export default function StaffRegisterPage() {
         body: {
           email: form.email,
           password: form.password,
-          fullName: form.fullName,
+          fullName,
           contactNo: form.contactNo || undefined,
           role: form.role,
         },
@@ -88,7 +96,7 @@ export default function StaffRegisterPage() {
         signupData={{
           email: form.email,
           password: form.password,
-          fullName: form.fullName,
+          fullName,
           contactNo: form.contactNo || undefined,
           role: form.role,
         }}
@@ -113,25 +121,46 @@ export default function StaffRegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Full Name */}
-        <div>
-          <label
-            className="block text-sm font-medium mb-2 text-gray-700"
-            htmlFor="fullName"
-          >
-            Full Name<span className="text-red-500">*</span>
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={form.fullName}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, fullName: e.target.value }))
-            }
-            required
-            autoComplete="name"
-          />
+        {/* Name */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="firstName"
+            >
+              First Name<span className="text-red-500">*</span>
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.firstName}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, firstName: e.target.value }))
+              }
+              required
+              autoComplete="given-name"
+            />
+          </div>
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="lastName"
+            >
+              Last Name<span className="text-red-500">*</span>
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.lastName}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, lastName: e.target.value }))
+              }
+              required
+              autoComplete="family-name"
+            />
+          </div>
         </div>
 
         {/* Email */}

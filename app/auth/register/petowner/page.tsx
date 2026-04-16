@@ -9,16 +9,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { validatePassword, formatPhoneNumber, getPasswordRequirements } from "@/lib/validation";
 
+interface PetOwnerRegisterForm extends Omit<PetOwnerSignupForm, "fullName" | "address"> {
+  firstName: string;
+  lastName: string;
+  addressLine1: string;
+  addressLine2: string;
+}
+
 export default function PetOwnerRegisterPage() {
   const router = useRouter();
   const [showOtpVerification, setShowOtpVerification] = useState(false);
-  const [form, setForm] = useState<PetOwnerSignupForm>({
+  const [form, setForm] = useState<PetOwnerRegisterForm>({
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     contactNo: "",
-    address: "",
+    addressLine1: "",
+    addressLine2: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -35,6 +44,11 @@ export default function PetOwnerRegisterPage() {
     return getPasswordRequirements(form.password);
   }, [form.password]);
 
+  const fullName = `${form.firstName} ${form.lastName}`.trim();
+  const address = [form.addressLine1.trim(), form.addressLine2.trim()]
+    .filter(Boolean)
+    .join(", ");
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -49,8 +63,8 @@ export default function PetOwnerRegisterPage() {
       setError("Passwords do not match.");
       return;
     }
-    if (!form.fullName.trim()) {
-      setError("Full name is required.");
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("First name and last name are required.");
       return;
     }
     if (!form.contactNo.trim()) {
@@ -65,9 +79,9 @@ export default function PetOwnerRegisterPage() {
         body: {
           email: form.email,
           password: form.password,
-          fullName: form.fullName,
+          fullName,
           contactNo: form.contactNo,
-          address: form.address || undefined,
+          address: address || undefined,
         },
       });
 
@@ -92,9 +106,9 @@ export default function PetOwnerRegisterPage() {
         signupData={{
           email: form.email,
           password: form.password,
-          fullName: form.fullName,
+          fullName,
           contactNo: form.contactNo,
-          address: form.address || undefined,
+          address: address || undefined,
         }}
         userType="petowner"
         onBack={() => setShowOtpVerification(false)}
@@ -117,25 +131,46 @@ export default function PetOwnerRegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Full Name */}
-        <div>
-          <label
-            className="block text-sm font-medium mb-2 text-gray-700"
-            htmlFor="fullName"
-          >
-            Full Name<span className="text-red-500">*</span>
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={form.fullName}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, fullName: e.target.value }))
-            }
-            required
-            autoComplete="name"
-          />
+        {/* Name */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="firstName"
+            >
+              First Name<span className="text-red-500">*</span>
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.firstName}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, firstName: e.target.value }))
+              }
+              required
+              autoComplete="given-name"
+            />
+          </div>
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="lastName"
+            >
+              Last Name<span className="text-red-500">*</span>
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.lastName}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, lastName: e.target.value }))
+              }
+              required
+              autoComplete="family-name"
+            />
+          </div>
         </div>
 
         {/* Email */}
@@ -191,23 +226,43 @@ export default function PetOwnerRegisterPage() {
         </div>
 
         {/* Address */}
-        <div>
-          <label
-            className="block text-sm font-medium mb-2 text-gray-700"
-            htmlFor="address"
-          >
-            Address
-          </label>
-          <textarea
-            id="address"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={form.address}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, address: e.target.value }))
-            }
-            rows={2}
-            autoComplete="street-address"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="addressLine1"
+            >
+              Address Line 1
+            </label>
+            <input
+              id="addressLine1"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.addressLine1}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, addressLine1: e.target.value }))
+              }
+              autoComplete="address-line1"
+            />
+          </div>
+          <div>
+            <label
+              className="block text-sm font-medium mb-2 text-gray-700"
+              htmlFor="addressLine2"
+            >
+              Address Line 2
+            </label>
+            <input
+              id="addressLine2"
+              type="text"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={form.addressLine2}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, addressLine2: e.target.value }))
+              }
+              autoComplete="address-line2"
+            />
+          </div>
         </div>
 
         {/* Password */}
