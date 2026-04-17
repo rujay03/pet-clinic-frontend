@@ -1,7 +1,10 @@
 // components/dashboard/TopNav.tsx
 
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface TopNavProps {
   userEmail?: string;
@@ -9,6 +12,22 @@ interface TopNavProps {
 }
 
 export default function TopNav({ userEmail, onLogout }: TopNavProps) {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: "/petowner/dashboard", label: "Dashboard" },
+    { href: "/petowner/pets", label: "Pets" },
+    { href: "/petowner/appointments", label: "Appointments" },
+    { href: "/petowner/records", label: "Pet records" },
+  ];
+
+  const isActiveTab = (href: string) => {
+    if (href === "/petowner/dashboard") {
+      return pathname === href;
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
     <header className="w-full bg-primary text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
@@ -21,31 +40,25 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
         </div>
 
         {/* Center: navigation links */}
-        <nav className="hidden items-center gap-6 text-sm md:flex">
-          <Link
-            href="/petowner/dashboard"
-            className="font-medium text-white hover:text-slate-100"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/petowner/pets"
-            className="text-slate-200 hover:text-white"
-          >
-            Pets
-          </Link>
-          <Link
-            href="/petowner/appointments"
-            className="text-slate-200 hover:text-white"
-          >
-            Appointments
-          </Link>
-          <Link
-            href="/petowner/records"
-            className="text-slate-200 hover:text-white"
-          >
-            Pet records
-          </Link>
+        <nav className="hidden items-center gap-3 text-sm md:flex">
+          {navItems.map((item) => {
+            const isActive = isActiveTab(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={
+                  isActive
+                    ? "rounded-full bg-white/20 px-3 py-1.5 font-semibold text-white ring-1 ring-white/40"
+                    : "rounded-full px-3 py-1.5 text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
+                }
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Right: user + logout */}
