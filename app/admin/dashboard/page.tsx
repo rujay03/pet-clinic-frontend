@@ -1,9 +1,120 @@
 // app/admin/dashboard/page.tsx
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
-import AdminShell from "@/components/admin/AdminShell";
+
+const navItems = [
+  { label: "Dashboard", href: "/admin/dashboard", active: true },
+  { label: "Manage Users", href: "/admin/users/manage", active: false },
+  { label: "Appointments", href: "/admin/appointments", active: false },
+  { label: "Pets", href: "#", active: false },
+  { label: "Medicine", href: "#", active: false },
+];
+
+const registrationRows = [
+  {
+    initials: "HS",
+    name: "Hirusha Subasinghe",
+    email: "admin@petcore.com",
+    role: "Admin",
+    badgeClass: "bg-[#5564ef] text-white",
+  },
+  {
+    initials: "KP",
+    name: "Dr. Kishani Perera",
+    email: "kishani@petcore.com",
+    role: "Doctor",
+    badgeClass: "bg-[#5c86ff] text-white",
+  },
+  {
+    initials: "TD",
+    name: "Thilini Dasanayake",
+    email: "thilini@petcore.com",
+    role: "Pet Owner",
+    badgeClass: "bg-[#9adfca] text-[#1f5d4f]",
+  },
+];
+
+const appointmentRows = [
+  {
+    initials: "K",
+    name: "Kitty",
+    owner: "Thilini Dasayake",
+    doctor: "Dr. Kishani Perera",
+    time: "10:00 AM",
+    badgeClass: "bg-[#f0df9f] text-[#946b00]",
+  },
+  {
+    initials: "M",
+    name: "Max",
+    owner: "John Wick",
+    doctor: "Dr. Kavindu Perera",
+    time: "02:00 PM",
+    badgeClass: "bg-[#b4e2d9] text-[#2b6559]",
+  },
+  {
+    initials: "B",
+    name: "Bella",
+    owner: "Hirusha Subasinghe",
+    doctor: "Dr. Kavindu Perera",
+    time: "04:00 PM",
+    badgeClass: "bg-[#f4c5cc] text-[#ab2b40]",
+  },
+];
+
+const statsCards = [
+  {
+    title: "Total Users",
+    subtitle: "All system users",
+    value: "185",
+    iconClass: "bg-[#07b4a5]",
+    cardClass: "from-[#ecf7f7] to-[#d5eeeb] border-[#c7e3df]",
+    iconPath:
+      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
+  },
+  {
+    title: "Pet Owners",
+    subtitle: "Active accounts",
+    value: "118",
+    iconClass: "bg-[#ffb300]",
+    cardClass: "from-[#fcf6e8] to-[#f7efdd] border-[#efdfbb]",
+    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
+  },
+  {
+    title: "Doctors",
+    subtitle: "Licensed doctors",
+    value: "21",
+    iconClass: "bg-[#3272ff]",
+    cardClass: "from-[#f0f1fb] to-[#e6e9fa] border-[#d6daf2]",
+    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
+  },
+  {
+    title: "Pharmacy & Staff",
+    subtitle: "POS & reception",
+    value: "46",
+    iconClass: "bg-[#ff3f81]",
+    cardClass: "from-[#fbeef4] to-[#f9e6f0] border-[#ecd1dd]",
+    iconPath:
+      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
+  },
+];
+
+const headerActions = [
+  {
+    label: "Search",
+    path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
+  },
+  {
+    label: "Quick Search",
+    path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
+  },
+  {
+    label: "Notifications",
+    path: "M15 17h5l-1.4-1.4a2 2 0 01-.6-1.42V11a6 6 0 10-12 0v3.18a2 2 0 01-.58 1.4L4 17h5m6 0a3 3 0 11-6 0",
+  },
+];
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -14,245 +125,213 @@ export default function AdminDashboardPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <AdminShell userEmail={user.email}>
-        <div className="max-w-7xl">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <span>Pages</span>
-            <span>/</span>
-            <span className="text-gray-700 font-medium">Admin</span>
-          </div>
-
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-
-          {/* Main Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Stats Cards (2/3 width) */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Stats Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Total Users Card */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl p-6 border border-teal-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
-                      <p className="text-xs text-gray-500">All system users</p>
-                    </div>
-                    <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-4xl font-bold text-gray-900 mb-2">128</p>
-                    <p className="text-sm text-gray-600">All system users</p>
-                  </div>
+      <div className="min-h-screen bg-[#f5f4fb] text-[#1f2a59]">
+        <header className="bg-gradient-to-r from-[#2a2f79] to-[#2b347f] text-white shadow-sm">
+          <div className="mx-auto flex w-full max-w-[1300px] items-center justify-between px-5 py-4 xl:px-8">
+            <div className="flex items-center gap-6 xl:gap-10">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/95 text-[#2a3889]">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z"
+                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                  </svg>
                 </div>
 
-                {/* Pet Owners Card */}
-                <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl p-6 border border-amber-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Pet Owners</p>
-                      <p className="text-xs text-gray-500">Active accounts</p>
-                    </div>
-                    <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-4xl font-bold text-gray-900 mb-2">84</p>
-                    <p className="text-sm text-gray-600">Active accounts</p>
-                  </div>
-                </div>
-
-                {/* Doctors Card */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Doctors</p>
-                      <p className="text-xs text-gray-500">Licensed doctors</p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-4xl font-bold text-gray-900 mb-2">12</p>
-                    <p className="text-sm text-gray-600">Licensed doctors</p>
-                  </div>
-                </div>
-
-                {/* Pharmacy & Staff Card */}
-                <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-2xl p-6 border border-rose-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 mb-1">Pharmacy & Staff</p>
-                      <p className="text-xs text-gray-500">POS & reception</p>
-                    </div>
-                    <div className="w-12 h-12 bg-rose-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <p className="text-4xl font-bold text-gray-900 mb-2">32</p>
-                    <p className="text-sm text-gray-600">POS & reception</p>
-                  </div>
-                </div>
+                <span className="text-lg font-semibold leading-none tracking-tight">PetCore</span>
               </div>
 
-              {/* Quick Admin Actions */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Quick Admin Actions</h2>
-                  <button className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                    Manage system users
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-                    </svg>
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <button className="py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm font-medium text-gray-700 transition-colors">
-                    Add New User
-                  </button>
-                  <button className="py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm font-medium text-gray-700 transition-colors">
-                    Assign Roles
-                  </button>
-                  <button className="py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-sm font-medium text-gray-700 transition-colors">
-                    View User Activity
-                  </button>
-                </div>
-              </div>
-
-              {/* Recent Users Table */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Users</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Name</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Role</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Email</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { name: "Hirusha Subasinghe", role: "Admin", email: "admin@petcore.com", status: "Active" },
-                        { name: "Dr. Kavindu Perera", role: "Doctor", email: "kavindu@petcore.com", status: "Active" },
-                        { name: "Nimali Fernando", role: "Pharmacy Staff", email: "nimali@petcore.com", status: "Active" },
-                        { name: "Ruwanthi Jayasinghe", role: "Pet Owner", email: "ruwanthi@example.com", status: "Pending" },
-                      ].map((user, idx) => (
-                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                                {user.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              <span className="text-sm font-medium text-gray-900">{user.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-sm text-gray-600">{user.role}</td>
-                          <td className="py-4 px-4 text-sm text-gray-600">{user.email}</td>
-                          <td className="py-4 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                              user.status === "Active" 
-                                ? "bg-green-100 text-green-700" 
-                                : "bg-amber-100 text-amber-700"
-                            }`}>
-                              {user.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <nav className="hidden items-center gap-2 md:flex lg:gap-3">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`rounded-xl px-4 py-2 text-xs transition-colors ${
+                      item.active
+                        ? "bg-white/10 text-white"
+                        : "text-white/85 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
             </div>
 
-            {/* Right Column - System Status (1/3 width) */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* System Status Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">System Status</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">New registrations</p>
-                      <p className="text-xs text-gray-500">(last 7 days)</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-gray-900">+24</p>
-                      <p className="text-xs text-green-600">↗ 24</p>
-                    </div>
-                  </div>
+            <div className="flex items-center gap-3">
+              {headerActions.map((action) => (
+                <button
+                  key={action.label}
+                  className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/10"
+                  aria-label={action.label}
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d={action.path} />
+                  </svg>
+                </button>
+              ))}
 
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Blocked accounts</p>
-                      <p className="text-xs text-gray-500">&nbsp;</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-red-600">2</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Last backup</p>
-                      <p className="text-xs text-gray-500">&nbsp;</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Today 02:15 AM</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Users Mini List */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Recent Users</h2>
-                <div className="space-y-4">
-                  {[
-                    { name: "Hirusha Subasinghe", role: "Admin", email: "admin@petcore.com", status: "Active" },
-                    { name: "Dr. Kavindu Perera", role: "Doctor", email: "kavindu@petcore.com", status: "Active" },
-                    { name: "Nimali Fernando", role: "Pharmacy Staff", email: "nimali@petcore.com", status: "Active" },
-                    { name: "Ruwanthi Jayasinghe", role: "Pet Owner", email: "ruwanthi@example.com", status: "Pending" },
-                  ].map((user, idx) => (
-                    <div key={idx} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                        {user.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.role}</p>
-                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                      </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                        user.status === "Active" 
-                          ? "bg-green-100 text-green-700" 
-                          : "bg-amber-100 text-amber-700"
-                      }`}>
-                        {user.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-semibold text-[#4b58ae]">
+                {user.email[0]?.toUpperCase() || "D"}
               </div>
             </div>
           </div>
-        </div>
-      </AdminShell>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1300px] px-5 pb-10 pt-10 xl:px-8 [&_h2]:text-lg [&_p]:text-sm [&_span]:text-xs [&_a]:text-xs [&_button]:text-xs">
+          <h1 className="text-3xl font-semibold leading-none text-[#1d2553]">Dashboard</h1>
+          <div className="mt-4 flex items-center gap-2 text-xs text-[#6472a0]">
+            <span>Admin Panel</span>
+            <span className="text-[#98a4c7]">&gt;</span>
+            <span className="text-[#2d396e]">Dashboard</span>
+          </div>
+
+          <section className="mt-8 grid gap-5 xl:grid-cols-3">
+            <div className="grid gap-5 md:grid-cols-2 xl:col-span-2">
+              {statsCards.map((card) => (
+                <div
+                  key={card.title}
+                  className={`rounded-[20px] border bg-gradient-to-br p-6 ${card.cardClass}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-base text-[#2d365f]">{card.title}</p>
+                      <p className="mt-2 text-xs text-[#5c668f]">{card.subtitle}</p>
+                    </div>
+                    <div className={`grid h-14 w-14 place-items-center rounded-2xl ${card.iconClass} text-white`}>
+                      <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="mt-7 text-2xl font-semibold leading-none text-[#1d2552]">{card.value}</p>
+                  <p className="mt-3 text-xs text-[#5d678f]">{card.subtitle}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[20px] border border-[#d9dced] bg-white/70 p-6">
+              <h2 className="font-semibold text-[#1d2553]">System Status</h2>
+
+              <div className="mt-6 space-y-6 text-[#2c3664]">
+                <div className="flex items-start justify-between border-b border-[#e8eaf5] pb-5">
+                  <div>
+                    <p className="text-xl font-medium text-[#16b58e]">+18 New</p>
+                    <p className="mt-1 text-xs text-[#62709d]">(last 7 days) ^</p>
+                  </div>
+                  <div className="text-right text-xl font-semibold text-[#15b287]">
+                    <p>+18</p>
+                    <p className="text-sm">^ 2</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-[#e8eaf5] pb-5">
+                  <p className="text-base">Blocked accounts</p>
+                  <p className="text-xl font-semibold text-[#eb364f]">3</p>
+                </div>
+
+                <div className="flex items-center justify-between text-base">
+                  <p>Last backup</p>
+                  <p>Today 02:15 AM</p>
+                </div>
+
+                <p className="text-base">Admin Activity</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-6 grid gap-5 xl:grid-cols-3">
+            <div className="rounded-[20px] border border-[#d8dceb] bg-white/70 p-6 xl:col-span-2">
+              <div className="flex items-start justify-between">
+                <h2 className="font-semibold text-[#1d2553]">Manage Users</h2>
+                <button className="grid h-11 w-11 place-items-center rounded-xl border border-[#ced4e8] text-[#8d98bb]">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M10 18h4" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button className="rounded-2xl bg-[#2f67ff] px-6 py-3 text-xs font-medium text-white shadow-sm">
+                  + Add New User
+                </button>
+                <button className="rounded-2xl border border-[#d7dced] bg-[#f8f9ff] px-6 py-3 text-xs text-[#5b6999]">
+                  View Roles & Permissions
+                </button>
+                <button className="rounded-2xl border border-[#d7dced] bg-[#f8f9ff] px-6 py-3 text-xs text-[#5b6999]">
+                  Access User Logs
+                </button>
+              </div>
+
+              <p className="mt-7 text-lg font-medium text-[#1f295a]">Recent Registrations</p>
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-[#dee1ef]">
+                {registrationRows.map((row) => (
+                  <div
+                    key={row.email}
+                    className="grid grid-cols-[1.6fr_0.6fr_0.35fr] items-center border-b border-[#eceef6] bg-white px-4 py-4 text-xs last:border-b-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`grid h-12 w-12 place-items-center rounded-full text-sm font-semibold ${row.badgeClass}`}
+                      >
+                        {row.initials}
+                      </div>
+                      <div>
+                        <p className="text-[#1f2957]">{row.name}</p>
+                        <p className="text-xs text-[#65729e]">{row.email}</p>
+                      </div>
+                    </div>
+                    <p className="text-[#516090]">{row.role}</p>
+                    <span className="inline-flex w-fit rounded-xl bg-[#daf4e6] px-3 py-1 text-xs text-[#1b8a61]">
+                      Active
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[20px] border border-[#d8dceb] bg-white/70 p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-[#1d2553]">Today&apos;s Appointments</h2>
+                <Link href="#" className="text-xs text-[#2366ff] hover:underline">
+                  View All
+                </Link>
+              </div>
+
+              <div className="mt-4 divide-y divide-[#e8eaf4] rounded-2xl border border-[#e4e7f3] bg-white">
+                {appointmentRows.map((row) => (
+                  <div key={`${row.name}-${row.time}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`grid h-12 w-12 place-items-center rounded-full text-sm font-medium ${row.badgeClass}`}
+                      >
+                        {row.initials}
+                      </div>
+                      <div>
+                        <p className="text-base font-medium text-[#1f295a]">{row.name}</p>
+                        <p className="text-xs text-[#4a5688]">{row.owner}</p>
+                        <p className="text-xs text-[#6a759f]">{row.doctor}</p>
+                      </div>
+                    </div>
+                    <p className="text-base font-medium text-[#1e2957]">{row.time}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 text-right">
+                <Link href="#" className="text-xs text-[#2366ff] hover:underline">
+                  View All
+                </Link>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }

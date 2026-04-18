@@ -1,6 +1,7 @@
 // components/pharmacy-staff/pos/ProductCard.tsx
 "use client";
 
+import Image from "next/image";
 import type { POSProduct } from "@/types/pharmacy";
 
 interface ProductCardProps {
@@ -13,21 +14,19 @@ export default function ProductCard({
   onAddToCart,
 }: ProductCardProps) {
   return (
-    <button
-      onClick={() => onAddToCart(product)}
-      className="bg-white rounded-lg p-4 border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
-    >
-      {/* Product Image */}
-      <div className="bg-slate-50 rounded-lg h-40 flex items-center justify-center mb-4 group-hover:bg-blue-50 transition-colors">
+    <article className="rounded-2xl border border-[#dce1ec] bg-white p-4">
+      <div className="mb-3 grid h-[150px] place-items-center rounded-xl bg-[#f3f5fa]">
         {product.image ? (
-          <img
+          <Image
             src={product.image}
             alt={product.name}
-            className="h-32 w-auto object-contain"
+            width={120}
+            height={120}
+            className="h-[120px] w-auto object-contain"
           />
         ) : (
           <svg
-            className="w-20 h-20 text-slate-300"
+            className="h-16 w-16 text-slate-300"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -42,15 +41,19 @@ export default function ProductCard({
         )}
       </div>
 
-      {/* Product Info */}
-      <div className="text-left">
-        <h3 className="font-medium text-slate-900 mb-2 text-sm leading-tight">
-          {product.name}
-        </h3>
-        <p className="text-slate-900 font-medium text-base">
-          Rs. {product.price.toLocaleString("en-IN")}
-        </p>
-      </div>
-    </button>
+      <h3 className="min-h-[52px] text-base font-medium leading-snug text-[#1e2757]">
+        {product.name}
+      </h3>
+      <p className="mt-2 text-lg font-semibold leading-none text-[#1b2554]">
+        Rs. {product.price.toLocaleString("en-IN")}
+      </p>
+
+      <button
+        onClick={() => onAddToCart(product)}
+        className="mt-3 h-11 w-full rounded-[14px] bg-[#2a63ff] text-sm font-medium leading-none text-white shadow-[0_2px_8px_rgba(37,85,220,0.2)] transition-colors hover:bg-[#2054e7]"
+      >
+        Add to Cart
+      </button>
+    </article>
   );
 }

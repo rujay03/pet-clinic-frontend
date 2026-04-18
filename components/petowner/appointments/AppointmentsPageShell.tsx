@@ -16,6 +16,16 @@ import RescheduleModal from "./RescheduleModal";
 
 const PAGE_SIZE = 5;
 
+function toIsoDay(value: string) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
 export default function AppointmentsPageShell() {
   // ── data ──
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -28,11 +38,13 @@ export default function AppointmentsPageShell() {
   const [filters, setFilters] = useState<AppointmentFilters>({
     petId: "",
     doctorName: "",
+    date: "",
     search: "",
   });
   const [appliedFilters, setAppliedFilters] = useState<AppointmentFilters>({
     petId: "",
     doctorName: "",
+    date: "",
     search: "",
   });
   const [upcomingPage, setUpcomingPage] = useState(1);
@@ -98,6 +110,7 @@ export default function AppointmentsPageShell() {
       return list.filter((a) => {
         if (f.petId && String(a.petId) !== f.petId) return false;
         if (f.doctorName && a.doctorName !== f.doctorName) return false;
+        if (f.date && toIsoDay(a.appointmentDate) !== f.date) return false;
         if (f.search) {
           const q = f.search.toLowerCase();
           const hay = `${a.petName} ${a.doctorName} ${a.petBreed || ""} ${a.reason || ""}`.toLowerCase();

@@ -1,12 +1,13 @@
 // app/pharmacy-staff/medicine/page.tsx
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import type { Medicine } from "@/types/pharmacy";
-import PharmacyShell from "@/components/pharmacy-staff/PharmacyShell";
 import MedicineTable from "@/components/pharmacy-staff/medicine/MedicineTable";
 
 export default function PharmacyMedicinePage() {
@@ -14,62 +15,59 @@ export default function PharmacyMedicinePage() {
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
-  // Mock medicine data
   const mockMedicines: Medicine[] = [
     {
       id: "1",
-      name: "Augmentin 625 Duo Tablet",
-      medicineId: "D061D232435454",
-      groupName: "Generic Medicine",
+      name: "Canine Deworming Tablet",
+      medicineId: "VET-ANTP-001",
+      groupName: "Antiparasitic",
     },
     {
       id: "2",
-      name: "Azithral 500 Tablet",
-      medicineId: "D061D232435451",
-      groupName: "Generic Medicine",
+      name: "Feline Deworming Suspension",
+      medicineId: "VET-ANTP-002",
+      groupName: "Antiparasitic",
     },
     {
       id: "3",
-      name: "Ascoril LS Syrup",
-      medicineId: "D061D232435452",
-      groupName: "Diabetes",
+      name: "Amoxiclav Vet 250 mg",
+      medicineId: "VET-ANTI-003",
+      groupName: "Antibiotic",
     },
     {
       id: "4",
-      name: "Azee 500 Tablet",
-      medicineId: "D061D232435450",
-      groupName: "Generic Medicine",
+      name: "Doxycycline Vet 100 mg",
+      medicineId: "VET-ANTI-004",
+      groupName: "Antibiotic",
     },
     {
       id: "5",
-      name: "Allegra 120mg Tablet",
-      medicineId: "D061D232435455",
-      groupName: "Diabetes",
+      name: "Meloxicam Oral Suspension",
+      medicineId: "VET-PAIN-005",
+      groupName: "Pain Relief",
     },
     {
       id: "6",
-      name: "Alex Syrup",
-      medicineId: "D061D232435456",
-      groupName: "Generic Medicine",
+      name: "Carprofen Chewable Tablet",
+      medicineId: "VET-PAIN-006",
+      groupName: "Pain Relief",
     },
     {
       id: "7",
-      name: "Amoxyclav 625 Tablet",
-      medicineId: "D061D232435457",
-      groupName: "Generic Medicine",
+      name: "Pet Multivitamin Syrup",
+      medicineId: "VET-SUPP-007",
+      groupName: "Supplements",
     },
     {
       id: "8",
-      name: "Avil 25 Tablet",
-      medicineId: "D061D232435458",
-      groupName: "Generic Medicine",
+      name: "Probiotic Sachet for Pets",
+      medicineId: "VET-SUPP-008",
+      groupName: "Supplements",
     },
   ];
 
   const totalMedicines = 298;
-  const itemsPerPage = 8;
 
   if (!user) {
     return null;
@@ -85,144 +83,84 @@ export default function PharmacyMedicinePage() {
 
   return (
     <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
-      <PharmacyShell userEmail={user.email} onLogout={logout}>
-      <div>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-              <span>Inventory</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
+      <div className="min-h-screen bg-[#f4f6fb] text-[#1a2554]">
+        <header className="bg-[#22295f] text-white">
+          <div className="mx-auto flex w-full max-w-[1500px] items-center justify-between px-8 py-4">
+            <div className="flex items-center gap-10">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logo.png"
+                  alt="PetCore Logo"
+                  width={64}
+                  height={64}
+                  priority
                 />
-              </svg>
-              <span className="text-slate-900 font-semibold">
-                List of Medicines ({totalMedicines})
-              </span>
+              </div>
+
+              <nav className="hidden items-center gap-2 text-sm lg:flex">
+                <Link
+                  className="rounded-full px-6 py-2 text-white/90 hover:bg-white/10"
+                  href="/pharmacy-staff/dashboard"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  className="rounded-full border border-white/30 bg-white/5 px-8 py-2 font-medium"
+                  href="/pharmacy-staff/medicine"
+                >
+                  Medicine
+                </Link>
+                <Link
+                  className="rounded-full px-6 py-2 text-white/90 hover:bg-white/10"
+                  href="/pharmacy-staff/inventory"
+                >
+                  Inventory Management
+                </Link>
+                <Link
+                  className="rounded-full px-6 py-2 text-white/90 hover:bg-white/10"
+                  href="/pharmacy-staff/pos"
+                >
+                  POS
+                </Link>
+              </nav>
             </div>
-            <p className="text-sm text-slate-500">
-              List of medicines available for sales.
-            </p>
-          </div>
-          <button
-            onClick={() => router.push("/pharmacy-staff/medicine/add")}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add New Item
-          </button>
-        </div>
 
-        {/* Search and Filter Bar */}
-        <div className="flex items-center gap-4 mb-6">
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Search Medicine Inventory.."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 placeholder:text-gray-400"
-            />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <svg
-                className="w-5 h-5 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-4">
+              <p className="hidden text-base text-white/90 xl:block">{user.email}</p>
+              <button
+                onClick={logout}
+                className="rounded-xl bg-white px-6 py-2 text-sm font-semibold text-[#1f285b] hover:bg-white/90"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </button>
+                Log out
+              </button>
+              <div className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-semibold text-[#1f285b]">
+                {user.email?.charAt(0).toUpperCase() || "T"}
+              </div>
+            </div>
           </div>
+        </header>
 
-          {/* Filter Icon */}
-          <button className="p-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            <svg
-              className="w-5 h-5 text-slate-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-          </button>
+        <main className="mx-auto w-full max-w-[1500px] px-8 pb-10 pt-10">
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold leading-tight text-[#18214f]">
+                Medicine
+              </h1>
+              <p className="mt-2 flex items-center gap-2 text-2xl text-[#445178]">
+                <span>Inventory</span>
+                <span className="text-[#6676a8]">&#8250;</span>
+                <span className="font-semibold text-[#18214f]">
+                  List of Medicines ({totalMedicines})
+                </span>
+              </p>
+            </div>
 
-          {/* Group Filter */}
-          <div className="relative">
-            <select
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              className="pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 appearance-none cursor-pointer min-w-[200px]"
-            >
-              <option value="" className="text-gray-400">- Select Group -</option>
-              <option value="Generic Medicine">Generic Medicine</option>
-              <option value="Diabetes">Diabetes</option>
-            </select>
-            <svg
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-        </div>
-
-        {/* Medicine Table */}
-        <MedicineTable medicines={filteredMedicines} />
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-slate-600">
-            Showing 1 - {Math.min(itemsPerPage, filteredMedicines.length)}{" "}
-            results of {totalMedicines}
-          </p>
-          <div className="flex items-center gap-2">
             <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={() => router.push("/pharmacy-staff/medicine/add")}
+              className="flex items-center gap-3 rounded-2xl bg-[#1f5fe0] px-8 py-4 text-xl font-medium text-white shadow-[0_8px_18px_rgba(31,95,224,0.35)] hover:bg-[#1a54c9]"
             >
               <svg
-                className="w-5 h-5 text-slate-600"
+                className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -231,14 +169,75 @@ export default function PharmacyMedicinePage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add New Item
+            </button>
+          </div>
+
+          <div className="mb-6 flex items-center gap-4">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search Medicine Inventory.."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-14 w-full rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] px-6 pr-14 text-xl text-[#273566] placeholder:text-[#6272a3] focus:outline-none focus:ring-2 focus:ring-[#7f8ec5]"
+              />
+              <button
+                type="button"
+                className="absolute right-5 top-1/2 -translate-y-1/2 text-[#6978ab]"
+              >
+                <svg
+                  className="h-9 w-9"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="grid h-14 w-14 place-items-center rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] text-[#48588f]"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                 />
               </svg>
             </button>
-            <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium">
-              Page {currentPage.toString().padStart(2, "0")}
+
+            <div className="relative min-w-[300px]">
+              <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="h-14 w-full appearance-none rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] pl-6 pr-14 text-xl text-[#273566] focus:outline-none focus:ring-2 focus:ring-[#7f8ec5]"
+              >
+                <option value="">- Select Group -</option>
+                <option value="Antiparasitic">Antiparasitic</option>
+                <option value="Antibiotic">Antibiotic</option>
+                <option value="Pain Relief">Pain Relief</option>
+                <option value="Supplements">Supplements</option>
+              </select>
               <svg
-                className="inline-block w-4 h-4 ml-2"
+                className="pointer-events-none absolute right-5 top-1/2 h-6 w-6 -translate-y-1/2 text-[#6877a9]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -251,28 +250,11 @@ export default function PharmacyMedicinePage() {
                 />
               </svg>
             </div>
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <svg
-                className="w-5 h-5 text-slate-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
           </div>
-        </div>
+
+          <MedicineTable medicines={filteredMedicines} />
+        </main>
       </div>
-    </PharmacyShell>
     </ProtectedRoute>
   );
 }

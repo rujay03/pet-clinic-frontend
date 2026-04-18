@@ -3,6 +3,7 @@
 export interface AppointmentFilters {
   petId: string;       // "" means all
   doctorName: string;  // "" means all
+  date: string;        // YYYY-MM-DD, "" means all dates
   search: string;
 }
 
@@ -78,6 +79,22 @@ export default function AppointmentsFilterBar({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </span>
+      </div>
+
+      {/* Date filter */}
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </span>
+        <input
+          type="date"
+          value={filters.date}
+          onChange={(e) => update({ date: e.target.value })}
+          className="rounded-full border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          aria-label="Filter by date"
+        />
       </div>
 
       {/* Search */}

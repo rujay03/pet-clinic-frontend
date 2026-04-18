@@ -1,249 +1,523 @@
 // app/admin/users/manage/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/common/ProtectedRoute";
-import AdminShell from "@/components/admin/AdminShell";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import AddUserModal from "@/components/admin/AddUserModal";
 import UserDetailsModal from "@/components/admin/UserDetailsModal";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
+
+type UserStatus = "Active" | "Pending" | "Blocked";
+
+type UserRole = "Admin" | "Doctor" | "Pet Owner" | "Pharmacy Staff";
 
 interface User {
   id: number;
   name: string;
   email: string;
-  role: string;
-  status: "Active" | "Pending" | "Blocked";
+  role: UserRole;
+  status: UserStatus;
   contactNo?: string;
   joinedDate?: string;
 }
 
-// Mock data - replace with API call later
-const mockUsers: User[] = [
-  { id: 1, name: "Hirusha Subasinghe", email: "admin@petcore.com", role: "Admin", status: "Active", contactNo: "0771234567", joinedDate: "2024-01-15" },
-  { id: 2, name: "Dr. Kavindu Perera", email: "kavindu@petcore.com", role: "Doctor", status: "Active", contactNo: "0772345678", joinedDate: "2024-02-20" },
-  { id: 3, name: "Nimali Fernando", email: "nimali@petcore.com", role: "Pharmacy Staff", status: "Active", contactNo: "0773456789", joinedDate: "2024-03-10" },
-  { id: 4, name: "Ruwanthi Jayasinghe", email: "ruwanthi@example.com", role: "Pet Owner", status: "Pending", contactNo: "0774567890", joinedDate: "2024-04-05" },
-  { id: 5, name: "Saman Kumara", email: "saman@petcore.com", role: "Doctor", status: "Active", contactNo: "0775678901", joinedDate: "2024-01-20" },
-  { id: 6, name: "Kasuni Silva", email: "kasuni@example.com", role: "Pet Owner", status: "Active", contactNo: "0776789012", joinedDate: "2024-02-15" },
-  { id: 7, name: "Pradeep Wickramasinghe", email: "pradeep@petcore.com", role: "Pharmacy Staff", status: "Active", contactNo: "0777890123", joinedDate: "2024-03-25" },
-  { id: 8, name: "Chamari Perera", email: "chamari@example.com", role: "Pet Owner", status: "Blocked", contactNo: "0778901234", joinedDate: "2024-04-01" },
+type SortKey = "name" | "email" | "role" | "status";
+type SortDirection = "asc" | "desc";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/admin/dashboard", active: false },
+  { label: "Manage Users", href: "/admin/users/manage", active: true },
+  { label: "Appointments", href: "/admin/appointments", active: false },
+  { label: "Pets", href: "#", active: false },
+  { label: "Medicine", href: "#", active: false },
 ];
+
+const ROLE_TABS: Array<{ label: string; value: "ALL" | UserRole }> = [
+  { label: "All", value: "ALL" },
+  { label: "Admins", value: "Admin" },
+  { label: "Doctors", value: "Doctor" },
+  { label: "Pet Owners", value: "Pet Owner" },
+  { label: "Pharmacy & Staff", value: "Pharmacy Staff" },
+];
+
+const INITIAL_USERS: User[] = [
+  {
+    id: 1,
+    name: "Hirusha Subasinghe",
+    email: "admin@petcore.com",
+    role: "Admin",
+    status: "Active",
+    contactNo: "0771234567",
+    joinedDate: "2024-01-15",
+  },
+  {
+    id: 2,
+    name: "Dr. Kishani Perera",
+    email: "kishani@petcore.com",
+    role: "Doctor",
+    status: "Active",
+    contactNo: "0772451544",
+    joinedDate: "2024-02-12",
+  },
+  {
+    id: 3,
+    name: "Thilini Dasanayake",
+    email: "thilini@petcore.com",
+    role: "Pet Owner",
+    status: "Active",
+    contactNo: "0775620183",
+    joinedDate: "2024-03-08",
+  },
+  {
+    id: 4,
+    name: "Ankith Sharma",
+    email: "atk@vpetcore.com",
+    role: "Admin",
+    status: "Active",
+    contactNo: "0779510001",
+    joinedDate: "2024-03-22",
+  },
+  {
+    id: 5,
+    name: "Kasun Fernando",
+    email: "kasun@petcore.com",
+    role: "Pharmacy Staff",
+    status: "Pending",
+    contactNo: "0772337788",
+    joinedDate: "2024-04-01",
+  },
+  {
+    id: 6,
+    name: "Nimali Silva",
+    email: "nimali@petcore.com",
+    role: "Pet Owner",
+    status: "Blocked",
+    contactNo: "0778944566",
+    joinedDate: "2024-04-02",
+  },
+  {
+    id: 7,
+    name: "Dr. Kavindu Perera",
+    email: "kavindu@petcore.com",
+    role: "Doctor",
+    status: "Active",
+    contactNo: "0771247788",
+    joinedDate: "2024-04-03",
+  },
+  {
+    id: 8,
+    name: "Ruwanthi Jayasinghe",
+    email: "ruwanthi@petcore.com",
+    role: "Pet Owner",
+    status: "Active",
+    contactNo: "0779988776",
+    joinedDate: "2024-04-05",
+  },
+];
+
+const PAGE_SIZE = 5;
+
+const rolePillClass: Record<UserRole, string> = {
+  Admin: "bg-[#e5e7ff] text-[#3f4ea8]",
+  Doctor: "bg-[#e5e7ff] text-[#3f4ea8]",
+  "Pet Owner": "bg-[#e5e7ff] text-[#3f4ea8]",
+  "Pharmacy Staff": "bg-[#f3e9fa] text-[#7c3a90]",
+};
+
+const statusPillClass: Record<UserStatus, string> = {
+  Active: "bg-[#d2f0e7] text-[#257767]",
+  Pending: "bg-[#fce9bf] text-[#9a6a00]",
+  Blocked: "bg-[#fad9df] text-[#a6334b]",
+};
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getAvatarClass(role: UserRole) {
+  if (role === "Admin") return "bg-gradient-to-br from-[#9566ff] to-[#6d5dee] text-white";
+  if (role === "Doctor") return "bg-gradient-to-br from-[#5e87ff] to-[#5e7be0] text-white";
+  return "bg-gradient-to-br from-[#b4e2d9] to-[#86cfc2] text-[#3f6f69]";
+}
+
+function getSortValue(user: User, key: SortKey) {
+  return user[key].toLowerCase();
+}
 
 export default function ManageUsersPage() {
   const { user } = useAuth();
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeRoleTab, setActiveRoleTab] = useState<"ALL" | UserRole>("ALL");
+  const [roleFilter, setRoleFilter] = useState<"ALL" | UserRole>("ALL");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
 
-  if (!user) {
-    return null;
-  }
+  const roleCounts = useMemo(() => {
+    return {
+      ALL: users.length,
+      Admin: users.filter((item) => item.role === "Admin").length,
+      Doctor: users.filter((item) => item.role === "Doctor").length,
+      "Pet Owner": users.filter((item) => item.role === "Pet Owner").length,
+      "Pharmacy Staff": users.filter((item) => item.role === "Pharmacy Staff").length,
+    };
+  }, [users]);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return users
+      .filter((item) => {
+        const matchesSearch =
+          !query ||
+          item.name.toLowerCase().includes(query) ||
+          item.email.toLowerCase().includes(query) ||
+          item.role.toLowerCase().includes(query);
+
+        const matchesTab = activeRoleTab === "ALL" || item.role === activeRoleTab;
+        const matchesDropdown = roleFilter === "ALL" || item.role === roleFilter;
+
+        return matchesSearch && matchesTab && matchesDropdown;
+      })
+      .sort((a, b) => {
+        const aValue = getSortValue(a, sortKey);
+        const bValue = getSortValue(b, sortKey);
+
+        if (aValue === bValue) return 0;
+        if (sortDirection === "asc") return aValue > bValue ? 1 : -1;
+        return aValue > bValue ? -1 : 1;
+      });
+  }, [users, searchQuery, activeRoleTab, roleFilter, sortKey, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedUsers = filteredUsers.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const allVisibleSelected =
+    paginatedUsers.length > 0 && paginatedUsers.every((currentUser) => selectedIds.includes(currentUser.id));
+
+  const handleSort = (key: SortKey) => {
+    setCurrentPage(1);
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection("asc");
+  };
+
+  const handleRoleTabChange = (role: "ALL" | UserRole) => {
+    setActiveRoleTab(role);
+    setCurrentPage(1);
+  };
+
+  const handleRoleFilterChange = (value: "ALL" | UserRole) => {
+    setRoleFilter(value);
+    setCurrentPage(1);
+  };
 
   const handleAddUser = (newUser: Omit<User, "id" | "joinedDate">) => {
-    const user: User = {
+    const createdUser: User = {
       ...newUser,
       id: users.length + 1,
       joinedDate: new Date().toISOString().split("T")[0],
     };
-    setUsers([...users, user]);
+
+    setUsers((prev) => [createdUser, ...prev]);
     setShowAddModal(false);
+    setCurrentPage(1);
   };
 
-  const handleUserClick = (user: User) => {
-    setSelectedUser(user);
+  const toggleUserSelection = (userId: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
   };
+
+  const toggleVisibleUsersSelection = () => {
+    const visibleIds = paginatedUsers.map((currentUser) => currentUser.id);
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+      return;
+    }
+
+    setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+  };
+
+  const showingText =
+    filteredUsers.length === 0
+      ? "Showing 0 of 0 users"
+      : `Showing ${pageStart + 1}-${Math.min(pageStart + PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length} users`;
+
+  if (!user) return null;
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <AdminShell userEmail={user.email}>
-        <div className="max-w-7xl">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <span>Pages</span>
-            <span>/</span>
-            <span className="text-gray-700 font-medium">Manage Users</span>
-          </div>
-
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Manage Users</h1>
-
-          {/* Search Bar and Add User Button */}
-          <div className="flex items-center justify-between mb-6 gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+      <div className="min-h-screen bg-[#f5f4fb] text-[#1f2a59]">
+        <header className="bg-gradient-to-r from-[#2a2f79] to-[#2b347f] text-white shadow-sm">
+          <div className="mx-auto flex w-full max-w-[1300px] items-center justify-between px-5 py-4 xl:px-8">
+            <div className="flex items-center gap-6 xl:gap-10">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/95 text-[#2a3889]">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z"
+                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                  </svg>
+                </div>
+                <span className="text-lg font-semibold leading-none tracking-tight">PetCore</span>
               </div>
-              <input
-                type="text"
-                placeholder="Search users by name, email, or role..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+
+              <nav className="hidden items-center gap-2 md:flex lg:gap-3">
+                {NAV_ITEMS.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`rounded-xl px-4 py-2 text-xs transition-colors ${
+                      item.active
+                        ? "bg-white/10 text-white"
+                        : "text-white/85 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
             </div>
 
-            {/* Add User Button */}
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-3">
+              <button
+                className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/10"
+                aria-label="Search"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Add New User
-            </button>
-          </div>
-
-          {/* Users Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                      User
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                      Email
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                      Role
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-12 text-center text-gray-500">
-                        No users found matching your search.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => handleUserClick(user)}
-                      >
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                              {user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {user.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {user.contactNo || "No contact"}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-sm text-gray-600">
-                          {user.email}
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              user.status === "Active"
-                                ? "bg-green-100 text-green-700"
-                                : user.status === "Pending"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleUserClick(user);
-                            }}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing {filteredUsers.length} of {users.length} users
-              </p>
-              <div className="flex items-center gap-2">
-                <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                  Previous
-                </button>
-                <button className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm">
-                  1
-                </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                  2
-                </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                  Next
-                </button>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" />
+                </svg>
+              </button>
+              <button
+                className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/10"
+                aria-label="Notifications"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.42V11a6 6 0 10-12 0v3.18a2 2 0 01-.58 1.4L4 17h5m6 0a3 3 0 11-6 0" />
+                </svg>
+              </button>
+              <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-semibold text-[#4b58ae]">
+                {user.email[0]?.toUpperCase() || "A"}
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Add User Modal */}
+        <main className="mx-auto w-full max-w-[1300px] px-5 pb-10 pt-10 xl:px-8">
+          <h1 className="text-3xl font-semibold leading-[1.1] text-[#1f295a]">Manage Users</h1>
+          <div className="mt-4 flex items-center gap-3 text-sm text-[#99a5cb]">
+            <span className="text-lg text-[#7f8bb3]">Admin Panel</span>
+            <span className="text-base">&gt;</span>
+            <span className="text-lg text-[#2f3b71]">Manage Users</span>
+          </div>
+
+          <section className="mt-8 rounded-3xl border border-[#d9dced] bg-white/65 shadow-[0_2px_8px_rgba(37,54,112,0.03)]">
+            <div className="border-b border-[#e6e8f2] p-5 lg:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex w-fit items-center gap-3 rounded-2xl bg-gradient-to-r from-[#2f67ff] to-[#2258f0] px-7 py-3 text-base font-medium text-white shadow-sm transition hover:brightness-105"
+                >
+                  <span className="text-2xl leading-none">+</span>
+                  Add New User
+                </button>
+
+                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row">
+                  <div className="relative min-w-[320px] rounded-xl border border-[#d6d9e8] bg-[#f9faff] pl-12 pr-4">
+                    <div className="pointer-events-none absolute inset-y-0 left-4 grid place-items-center text-[#7884af]">
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" />
+                      </svg>
+                    </div>
+                    <input
+                      value={searchQuery}
+                      onChange={(event) => {
+                        setSearchQuery(event.target.value);
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Search users..."
+                      className="h-12 w-full bg-transparent text-base text-[#2b376f] placeholder:text-[#8e98bd] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="relative min-w-[200px]">
+                    <select
+                      value={roleFilter}
+                      onChange={(event) => handleRoleFilterChange(event.target.value as "ALL" | UserRole)}
+                      className="h-12 w-full appearance-none rounded-xl border border-[#d6d9e8] bg-[#f9faff] px-4 pr-11 text-base text-[#2b376f] focus:outline-none"
+                    >
+                      <option value="ALL">All Roles</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Doctor">Doctor</option>
+                      <option value="Pet Owner">Pet Owner</option>
+                      <option value="Pharmacy Staff">Pharmacy Staff</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-[#7d89b0]">
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                {ROLE_TABS.map((tab) => {
+                  const isActive = activeRoleTab === tab.value;
+                  const count = tab.value === "ALL" ? roleCounts.ALL : roleCounts[tab.value];
+                  return (
+                    <button
+                      key={tab.label}
+                      onClick={() => handleRoleTabChange(tab.value)}
+                      className={`rounded-xl border px-6 py-2.5 text-sm transition md:text-base ${
+                        isActive
+                          ? "border-[#c5d2ff] bg-[#e9edff] text-[#245ef6]"
+                          : "border-[#d8dceb] bg-white text-[#5a6798] hover:bg-[#f5f7ff]"
+                      }`}
+                    >
+                      {tab.label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="border-b border-[#e6e8f2] px-6 py-4">
+              <div className="flex items-center gap-3 text-[#6674a4]">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l-7 7 7 7M19 5l-7 7 7 7" />
+                </svg>
+                <p className="text-sm">Showing {filteredUsers.length} of {users.length} users</p>
+              </div>
+            </div>
+
+            <div className="p-5 lg:p-6">
+              <div className="overflow-hidden rounded-2xl border border-[#e0e4f0] bg-white">
+                <div className="grid grid-cols-[56px_1.5fr_1.2fr_0.9fr_0.9fr_0.9fr] items-center bg-gradient-to-b from-[#f7f8fe] to-[#f3f5fb] px-5 py-4 text-sm text-[#2f3a70] lg:text-base">
+                  <label className="grid place-items-center">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleVisibleUsersSelection}
+                      className="h-6 w-6 rounded border-[#ccd3e9] text-[#4368ff] focus:ring-[#9eb2ff]"
+                    />
+                  </label>
+                  <button onClick={() => handleSort("name")} className="flex items-center gap-2 font-medium">
+                    Name <span className="text-[#7480a8]">{sortKey === "name" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                  </button>
+                  <button onClick={() => handleSort("email")} className="flex items-center gap-2 font-medium">
+                    Email <span className="text-[#7480a8]">{sortKey === "email" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                  </button>
+                  <button onClick={() => handleSort("role")} className="flex items-center gap-2 font-medium">
+                    Role <span className="text-[#7480a8]">{sortKey === "role" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                  </button>
+                  <button onClick={() => handleSort("status")} className="flex items-center gap-2 font-medium">
+                    Status <span className="text-[#7480a8]">{sortKey === "status" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                  </button>
+                  <p className="font-medium">Action</p>
+                </div>
+
+                {paginatedUsers.length === 0 ? (
+                  <div className="py-16 text-center text-lg text-[#7a86ae]">No users found for the selected filters.</div>
+                ) : (
+                  paginatedUsers.map((currentUser) => (
+                    <div
+                      key={currentUser.id}
+                      className="grid grid-cols-[56px_1.5fr_1.2fr_0.9fr_0.9fr_0.9fr] items-center border-t border-[#eceff7] px-5 py-4"
+                    >
+                      <label className="grid place-items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(currentUser.id)}
+                          onChange={() => toggleUserSelection(currentUser.id)}
+                          className="h-6 w-6 rounded border-[#ccd3e9] text-[#4368ff] focus:ring-[#9eb2ff]"
+                        />
+                      </label>
+
+                      <div className="flex items-center gap-3">
+                        <div className={`grid h-14 w-14 place-items-center rounded-full text-xl font-medium ${getAvatarClass(currentUser.role)}`}>
+                          {getInitials(currentUser.name)}
+                        </div>
+                        <div>
+                          <p className="text-lg leading-tight text-[#1f295a]">{currentUser.name}</p>
+                          <p className="text-sm text-[#6673a3]">{currentUser.email}</p>
+                        </div>
+                      </div>
+
+                      <p className="text-base text-[#4a588b]">{currentUser.email}</p>
+
+                      <span className={`inline-flex w-fit rounded-xl px-4 py-1.5 text-sm ${rolePillClass[currentUser.role]}`}>
+                        {currentUser.role}
+                      </span>
+
+                      <span className={`inline-flex w-fit rounded-xl px-4 py-1.5 text-sm ${statusPillClass[currentUser.status]}`}>
+                        {currentUser.status}
+                      </span>
+
+                      <button
+                        onClick={() => setSelectedUser(currentUser)}
+                        className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#ccd3e9] px-6 py-2 text-base text-[#4f5d8f] hover:bg-[#f8f9ff]"
+                      >
+                        View
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-4 px-2">
+                <p className="text-sm text-[#5f6da0]">{showingText}</p>
+                <div className="flex items-center gap-3 text-base text-[#6c78a7]">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="grid h-11 w-11 place-items-center rounded-xl border border-[#d5daea] bg-[#f7f8fc] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <span className="font-medium text-[#2f67ff]">{safeCurrentPage}</span>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#d5daea] bg-[#f7f8fc] px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
         {showAddModal && (
           <AddUserModal
             onClose={() => setShowAddModal(false)}
@@ -251,14 +525,13 @@ export default function ManageUsersPage() {
           />
         )}
 
-        {/* User Details Modal */}
         {selectedUser && (
           <UserDetailsModal
             user={selectedUser}
             onClose={() => setSelectedUser(null)}
           />
         )}
-      </AdminShell>
+      </div>
     </ProtectedRoute>
   );
 }

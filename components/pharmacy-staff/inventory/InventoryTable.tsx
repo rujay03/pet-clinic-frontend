@@ -3,153 +3,212 @@
 
 import type { InventoryMedicine } from "@/types/pharmacy";
 
+type SortKey = "name" | "medicineId" | "groupName" | "stockQuantity";
+type SortDirection = "asc" | "desc";
+
 interface InventoryTableProps {
   medicines: InventoryMedicine[];
+  sortKey: SortKey;
+  sortDirection: SortDirection;
+  onSort: (key: SortKey) => void;
   onViewDetail: (medicineId: string) => void;
+  onAdjustStock: (medicineId: string, delta: number) => void;
+}
+
+function getStockStatus(quantity: number, reorderLevel: number) {
+  if (quantity <= 0) {
+    return { label: "Out", className: "bg-red-100 text-red-700" };
+  }
+  if (quantity <= reorderLevel) {
+    return { label: "Low", className: "bg-amber-100 text-amber-700" };
+  }
+  return { label: "In", className: "bg-emerald-100 text-emerald-700" };
+}
+
+function SortIcon({
+  active,
+  direction,
+}: {
+  active: boolean;
+  direction: SortDirection;
+}) {
+  return (
+    <svg
+      className={`h-5 w-5 ${active ? "text-[#1f5fe0]" : "text-[#243468]"}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+      />
+      {active && (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d={direction === "asc" ? "M11 6h2" : "M11 18h2"}
+        />
+      )}
+    </svg>
+  );
 }
 
 export default function InventoryTable({
   medicines,
+  sortKey,
+  sortDirection,
+  onSort,
   onViewDetail,
+  onAdjustStock,
 }: InventoryTableProps) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-[#dce2ef] bg-white">
       <table className="w-full">
-        <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="px-6 py-4 text-left">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <thead className="border-b border-[#dce2ef] bg-white">
+          <tr>
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
+              <button
+                type="button"
+                onClick={() => onSort("name")}
+                className="flex items-center gap-2"
+              >
                 Medicine Name
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+                <SortIcon
+                  active={sortKey === "name"}
+                  direction={sortDirection}
+                />
+              </button>
             </th>
-            <th className="px-6 py-4 text-left">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
+              <button
+                type="button"
+                onClick={() => onSort("medicineId")}
+                className="flex items-center gap-2"
+              >
                 Medicine ID
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+                <SortIcon
+                  active={sortKey === "medicineId"}
+                  direction={sortDirection}
+                />
+              </button>
             </th>
-            <th className="px-6 py-4 text-left">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
+              <button
+                type="button"
+                onClick={() => onSort("groupName")}
+                className="flex items-center gap-2"
+              >
                 Group Name
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+                <SortIcon
+                  active={sortKey === "groupName"}
+                  direction={sortDirection}
+                />
+              </button>
             </th>
-            <th className="px-6 py-4 text-left">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
+              <button
+                type="button"
+                onClick={() => onSort("stockQuantity")}
+                className="flex items-center gap-2"
+              >
                 Stock in Qty
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+                <SortIcon
+                  active={sortKey === "stockQuantity"}
+                  direction={sortDirection}
+                />
+              </button>
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
               Action
             </th>
           </tr>
         </thead>
-        <tbody>
-          {medicines.map((medicine, index) => (
-            <tr
-              key={medicine.id}
-              className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${
-                index === medicines.length - 1 ? "border-b-0" : ""
-              }`}
-            >
-              <td className="px-6 py-4 text-sm text-slate-900">
-                {medicine.name}
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-600">
-                {medicine.medicineId}
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-600">
-                {medicine.groupName}
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-900 font-medium">
-                {medicine.stockQuantity}
-              </td>
-              <td className="px-6 py-4">
-                <button
-                  onClick={() => onViewDetail(medicine.id)}
-                  className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors"
-                >
-                  View Full Detail
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
+        <tbody className="divide-y divide-[#e3e8f2]">
+          {medicines.map((medicine) => {
+            const reorderLevel = medicine.reorderLevel ?? 50;
+            const status = getStockStatus(medicine.stockQuantity, reorderLevel);
+
+            return (
+              <tr
+                key={medicine.id}
+                className="transition-colors hover:bg-[#f7f9ff]"
+              >
+                <td className="px-8 py-5 text-[20px] text-[#1f2a58]">
+                  {medicine.name}
+                </td>
+                <td className="px-8 py-5 text-[20px] text-[#1f2a58]">
+                  {medicine.medicineId}
+                </td>
+                <td className="px-8 py-5 text-[20px] text-[#1f2a58]">
+                  {medicine.groupName}
+                </td>
+                <td className="px-8 py-5 text-[20px] text-[#1f2a58]">
+                  <div className="flex items-center gap-3">
+                    <span>{medicine.stockQuantity}</span>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => onAdjustStock(medicine.id, -5)}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-[#d2d9ec] text-[#2a3a70] hover:bg-[#eef3ff]"
+                      aria-label={`Decrease stock for ${medicine.name}`}
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onAdjustStock(medicine.id, 5)}
+                      className="grid h-8 w-8 place-items-center rounded-lg border border-[#d2d9ec] text-[#2a3a70] hover:bg-[#eef3ff]"
+                      aria-label={`Increase stock for ${medicine.name}`}
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onViewDetail(medicine.id)}
+                      className="flex items-center gap-2 text-[20px] font-medium text-[#1d2c66] transition-colors hover:text-[#1f5fe0]"
+                    >
+                      View Full Detail
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+          {medicines.length === 0 && (
+            <tr>
+              <td
+                colSpan={5}
+                className="px-8 py-10 text-center text-base text-[#50608f]"
+              >
+                No medicines found for the selected filters.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

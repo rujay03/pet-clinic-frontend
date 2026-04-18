@@ -1,342 +1,300 @@
 // app/pharmacy-staff/pos/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 import type { POSProduct, CartItem } from "@/types/pharmacy";
 import ProductCard from "@/components/pharmacy-staff/pos/ProductCard";
 import ShoppingCart from "@/components/pharmacy-staff/pos/ShoppingCart";
 
+const mockProducts: POSProduct[] = [
+	{
+		id: "1",
+		name: "Canine Deworming Tablet",
+		price: 950,
+		stock: 50,
+		image: "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "2",
+		name: "Feline Deworming Suspension",
+		price: 1240,
+		stock: 35,
+		image: "/pharmacy-products/ABORT-AID.jpg"
+	},
+	{
+		id: "3",
+		name: "Amoxiclav Vet 250 mg",
+		price: 680,
+		stock: 48,
+		image:  "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "4",
+		name: "Doxycycline Vet 100 mg",
+		price: 720,
+		stock: 42,
+		image: "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "5",
+		name: "Meloxicam Oral Suspension",
+		price: 1120,
+		stock: 26,
+		image: "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "6",
+		name: "Carprofen Chewable Tablet",
+		price: 1350,
+		stock: 24,
+		image: "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "7",
+		name: "Pet Multivitamin Syrup",
+		price: 890,
+		stock: 60,
+		image:  "/pharmacy-products/ABORT-AID.jpg",
+	},
+	{
+		id: "8",
+		name: "Probiotic Sachet for Pets",
+		price: 510,
+		stock: 80,
+		image: "/pharmacy-products/ABORT-AID.jpg",
+	},
+];
+
 export default function POSPage() {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [currentDateTime, setCurrentDateTime] = useState("");
+	const router = useRouter();
+	const { user, logout } = useAuth();
+	const [searchQuery, setSearchQuery] = useState("");
+	const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  // Mock products data
-  const mockProducts: POSProduct[] = [
-    {
-      id: "1",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-    {
-      id: "2",
-      name: "PEDIGREE Puppy Chicken",
-      price: 5600.0,
-      stock: 50,
-    },
-    {
-      id: "3",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-    {
-      id: "4",
-      name: "PEDIGREE Puppy Chicken",
-      price: 8400.0,
-      stock: 50,
-    },
-    {
-      id: "5",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-    {
-      id: "6",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-    {
-      id: "7",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-    {
-      id: "8",
-      name: "PEDIGREE Puppy Chicken",
-      price: 2800.0,
-      stock: 50,
-    },
-  ];
+	const handleAddToCart = (product: POSProduct) => {
+		setCartItems((prev) => {
+			const existingItem = prev.find((item) => item.product.id === product.id);
+			if (!existingItem) {
+				return [...prev, { product, quantity: 1 }];
+			}
 
-  const handleAddToCart = (product: POSProduct) => {
-    setCartItems((prev) => {
-      const existingItem = prev.find((item) => item.product.id === product.id);
-      if (existingItem) {
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        );
-      } else {
-        return [...prev, { product, quantity: 1 }];
-      }
-    });
-  };
+			return prev.map((item) =>
+				item.product.id === product.id
+					? { ...item, quantity: item.quantity + 1 }
+					: item,
+			);
+		});
+	};
 
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
-    if (quantity === 0) {
-      handleRemoveItem(productId);
-    } else {
-      setCartItems((prev) =>
-        prev.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item,
-        ),
-      );
-    }
-  };
+	const handleUpdateQuantity = (productId: string, quantity: number) => {
+		if (quantity <= 0) {
+			setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+			return;
+		}
 
-  const handleRemoveItem = (productId: string) => {
-    setCartItems((prev) =>
-      prev.filter((item) => item.product.id !== productId),
-    );
-  };
+		setCartItems((prev) =>
+			prev.map((item) =>
+				item.product.id === productId ? { ...item, quantity } : item,
+			),
+		);
+	};
 
-  const handleMakeSale = () => {
-    if (cartItems.length === 0) {
-      alert("Cart is empty!");
-      return;
-    }
-    console.log("Making sale:", cartItems);
-    // TODO: Process sale
-    alert("Sale completed!");
-    setCartItems([]);
-  };
+	const handleRemoveItem = (productId: string) => {
+		setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+	};
 
-  const filteredProducts = mockProducts.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+	const handleClearCart = () => setCartItems([]);
 
-  // Get current date and time - matching PharmacyShell format
-  useEffect(() => {
-    const updateDateTime = () => {
-      const currentDate = new Date().toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-      const currentTime = new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      });
-      setCurrentDateTime(`${currentDate} ${currentTime}`);
-    };
+	const handleMakeSale = () => {
+		if (cartItems.length === 0) {
+			alert("Your cart is empty");
+			return;
+		}
 
-    updateDateTime();
-    const interval = setInterval(updateDateTime, 1000);
+		alert("Sale completed successfully");
+		setCartItems([]);
+	};
 
-    return () => clearInterval(interval);
-  }, []);
+	const filteredProducts = useMemo(
+		() =>
+			mockProducts.filter((product) =>
+				product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+			),
+		[searchQuery],
+	);
 
-  return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      {/* Sidebar - matching standard width */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        {/* Logo */}
-        <div className="px-6 py-8">
-          <h1 className="text-2xl font-bold text-indigo-900">PET CORE</h1>
-        </div>
+	if (!user) {
+		return null;
+	}
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-2 space-y-1">
-          <Link
-            href="/pharmacy-staff/dashboard"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z"
-              />
-            </svg>
-            <span className="text-sm font-medium">Dashboard</span>
-          </Link>
+	return (
+		<ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
+			<div className="min-h-screen bg-[#f4f6fb] text-[#1a2554]">
+				<header className="bg-[#22295f] text-white">
+					<div className="mx-auto flex w-full max-w-[1500px] items-center justify-between px-8 py-4">
+						<div className="flex items-center gap-10">
+							<div className="flex items-center gap-3">
+								<Image
+									src="/logo.png"
+									alt="PetCore Logo"
+									width={64}
+									height={64}
+									priority
+								/>
+							</div>
 
-          <Link
-            href="/pharmacy-staff/medicine"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-              />
-            </svg>
-            <span className="text-sm font-medium">Medicine</span>
-          </Link>
+							<nav className="hidden items-center gap-2 text-base lg:flex">
+								<Link
+									className="rounded-xl px-4 py-2 text-white/90 hover:bg-white/10"
+									href="/pharmacy-staff/dashboard"
+								>
+									Dashboard
+								</Link>
+								<Link
+									className="rounded-xl px-4 py-2 text-white/90 hover:bg-white/10"
+									href="/pharmacy-staff/medicine"
+								>
+									Medicine
+								</Link>
+								<Link
+									className="flex items-center gap-2 rounded-xl px-4 py-2 text-white/90 hover:bg-white/10"
+									href="/pharmacy-staff/inventory"
+								>
+									Inventory Management
+									<svg
+										className="h-4 w-4"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M19 9l-7 7-7-7"
+										/>
+									</svg>
+								</Link>
+								<Link
+									className="rounded-xl border border-white/30 bg-white/10 px-4 py-2 font-medium"
+									href="/pharmacy-staff/pos"
+								>
+									POS
+								</Link>
+							</nav>
+						</div>
 
-          <Link
-            href="/pharmacy-staff/inventory"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            <span className="text-sm font-medium">Inventory Management</span>
-          </Link>
+						<div className="flex items-center gap-4">
+							<p className="hidden text-base text-white/90 xl:block">
+								{user.email}
+							</p>
+							<button
+								onClick={logout}
+								className="rounded-xl bg-white px-6 py-2 text-sm font-semibold text-[#1f285b] hover:bg-white/90"
+							>
+								Log out
+							</button>
+							<div className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-semibold text-[#1f285b]">
+								T
+							</div>
+						</div>
+					</div>
+				</header>
 
-          <Link
-            href="/pharmacy-staff/pos"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-50 text-indigo-600 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-              />
-            </svg>
-            <span className="text-sm font-medium">POS</span>
-          </Link>
+				<main className="mx-auto w-full max-w-[1500px] px-8 pb-8 pt-8">
+					<div className="mb-6 flex items-start justify-between gap-4">
+						<div>
+							<h1 className="text-3xl font-semibold leading-tight tracking-tight text-[#18214f]">
+								Point of Sale
+							</h1>
+							<div className="mt-3 flex items-center gap-2 text-sm leading-none">
+								<span className="text-[#6f7a9f]">Inventory</span>
+								<span className="text-[#8b95b5]">&gt;</span>
+								<span className="font-medium text-[#1f285b]">
+									Medicine Inventory
+								</span>
+							</div>
+						</div>
 
-          <Link
-            href="/pharmacy-staff/profile"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span className="text-sm font-medium">Profile</span>
-          </Link>
+						<div className="flex items-center gap-3 pt-2">
+							<button
+								onClick={handleClearCart}
+								className="flex items-center gap-2 rounded-xl bg-[#2962ff] px-5 py-3 text-base font-medium text-white shadow-sm hover:bg-[#1f55ec]"
+							>
+								<span className="text-xl leading-none">+</span>
+								New Sale
+							</button>
+							<button
+								onClick={() => router.push("/pharmacy-staff/dashboard")}
+								className="rounded-xl border border-[#d6dbea] bg-[#f8f9ff] px-5 py-3 text-sm font-medium text-[#22295f] hover:bg-[#eef1fb]"
+							>
+								Return Dashboard
+								<span className="ml-3">&gt;</span>
+							</button>
+						</div>
+					</div>
 
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/pharmacy-staff/login");
-            }}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 w-full transition-colors"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            <span className="text-sm font-medium">Log out</span>
-          </button>
-        </nav>
-      </aside>
+					<div className="grid grid-cols-[1fr_390px] gap-5">
+						<section className="overflow-hidden rounded-3xl border border-[#dce1ec] bg-[#f7f8fd]">
+							<div className="border-b border-[#dce1ec] p-4">
+								<div className="flex items-center overflow-hidden rounded-2xl border border-[#d9deea] bg-white">
+									<input
+										type="text"
+										placeholder="Search Medicine..."
+										value={searchQuery}
+										onChange={(e) => setSearchQuery(e.target.value)}
+										className="h-14 flex-1 bg-transparent px-5 text-base text-[#1f285b] outline-none placeholder:text-[#9aa3c0]"
+									/>
+									<button className="grid h-14 w-14 place-items-center border-l border-[#d9deea] text-[#8a95b6]">
+										<svg
+											className="h-5 w-5"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+											/>
+										</svg>
+									</button>
+								</div>
+							</div>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header */}
-        <header className="bg-slate-50 px-8 py-4 flex-shrink-0 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Search Medicine"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 placeholder:text-gray-400"
-              />
-            </div>
+							<div className="p-4">
+								<h2 className="mb-4 text-2xl font-semibold leading-none text-[#18214f]">
+									Medicine Inventory
+								</h2>
 
-            {/* Make Sale and Return Dashboard */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleMakeSale}
-                className="px-8 py-2.5 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition-colors"
-              >
-                Make Sale
-              </button>
-              <button
-                onClick={() => router.push("/pharmacy-staff/dashboard")}
-                className="text-slate-900 font-medium hover:text-blue-600 transition-colors"
-              >
-                Return Dashboard
-              </button>
-            </div>
-          </div>
+								<div className="grid grid-cols-4 gap-4">
+									{filteredProducts.map((product) => (
+										<ProductCard
+											key={product.id}
+											product={product}
+											onAddToCart={handleAddToCart}
+										/>
+									))}
+								</div>
+							</div>
+						</section>
 
-          {/* Date and Time - matching PharmacyShell format */}
-          <div className="flex justify-end mt-2">
-            <div className="text-xs text-slate-500">{currentDateTime}</div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Products Grid */}
-          <div className="flex-1 p-6 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-4">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={handleAddToCart}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Right Sidebar - Shopping Cart */}
-          <div className="w-96 bg-slate-50 p-6 flex-shrink-0 overflow-hidden">
-            <ShoppingCart
-              cartItems={cartItems}
-              onUpdateQuantity={handleUpdateQuantity}
-              onRemoveItem={handleRemoveItem}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+						<ShoppingCart
+							cartItems={cartItems}
+							onUpdateQuantity={handleUpdateQuantity}
+							onRemoveItem={handleRemoveItem}
+							onClearCart={handleClearCart}
+							onMakeSale={handleMakeSale}
+						/>
+					</div>
+				</main>
+			</div>
+		</ProtectedRoute>
+	);
 }

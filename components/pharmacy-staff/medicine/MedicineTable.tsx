@@ -9,15 +9,15 @@ interface MedicineTableProps {
 
 export default function MedicineTable({ medicines }: MedicineTableProps) {
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-[#dce2ef] bg-white">
       <table className="w-full">
-        <thead className="bg-white border-b border-slate-200">
+        <thead className="border-b border-[#dce2ef] bg-white">
           <tr>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
               <div className="flex items-center gap-2">
                 Medicine Name
                 <svg
-                  className="w-4 h-4"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -31,11 +31,11 @@ export default function MedicineTable({ medicines }: MedicineTableProps) {
                 </svg>
               </div>
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
               <div className="flex items-center gap-2">
                 Medicine ID
                 <svg
-                  className="w-4 h-4"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -49,11 +49,11 @@ export default function MedicineTable({ medicines }: MedicineTableProps) {
                 </svg>
               </div>
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
               <div className="flex items-center gap-2">
                 Group Name
                 <svg
-                  className="w-4 h-4"
+                  className="h-5 w-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -67,31 +67,22 @@ export default function MedicineTable({ medicines }: MedicineTableProps) {
                 </svg>
               </div>
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
               Action
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-[#e3e8f2]">
           {medicines.map((medicine) => (
-            <tr
-              key={medicine.id}
-              className="hover:bg-slate-50 transition-colors"
-            >
-              <td className="px-6 py-4 text-sm text-slate-900">
-                {medicine.name}
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-900">
-                {medicine.medicineId}
-              </td>
-              <td className="px-6 py-4 text-sm text-slate-900">
-                {medicine.groupName}
-              </td>
-              <td className="px-6 py-4">
-                <button className="text-sm text-slate-600 hover:text-indigo-600 flex items-center gap-1 transition-colors">
+            <tr key={medicine.id} className="transition-colors hover:bg-[#f7f9ff]">
+              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.name}</td>
+              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.medicineId}</td>
+              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.groupName}</td>
+              <td className="px-8 py-5">
+                <button className="flex items-center gap-2 text-[20px] font-medium text-[#1d2c66] hover:text-[#1f5fe0] transition-colors">
                   View Full Detail
                   <svg
-                    className="w-4 h-4"
+                    className="h-5 w-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

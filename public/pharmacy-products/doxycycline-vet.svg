@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#eef4ff"/>
+  <rect x="56" y="62" width="188" height="180" rx="18" fill="#ffffff" stroke="#c7d7f7" stroke-width="4"/>
+  <rect x="56" y="62" width="188" height="44" rx="18" fill="#3157d6"/>
+  <text x="150" y="90" font-size="13" text-anchor="middle" fill="#ffffff" font-family="Arial">VETCARE RX</text>
+  <text x="150" y="142" font-size="21" text-anchor="middle" fill="#1f2b57" font-family="Arial" font-weight="700">Doxycycline</text>
+  <text x="150" y="168" font-size="14" text-anchor="middle" fill="#4a5f92" font-family="Arial">100 mg Capsules</text>
+  <g transform="translate(96 191)">
+    <rect width="108" height="26" rx="13" fill="#e6ecff"/>
+    <circle cx="19" cy="13" r="8" fill="#3157d6"/>
+    <circle cx="89" cy="13" r="8" fill="#3157d6"/>
+  </g>
+</svg>
+

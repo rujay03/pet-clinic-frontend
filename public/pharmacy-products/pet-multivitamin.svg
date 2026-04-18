@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#eefaf3"/>
+  <rect x="108" y="50" width="84" height="30" rx="8" fill="#2aa96b"/>
+  <rect x="98" y="78" width="104" height="172" rx="20" fill="#ffffff" stroke="#b8e4ca" stroke-width="4"/>
+  <rect x="98" y="78" width="104" height="44" rx="20" fill="#33ba76"/>
+  <text x="150" y="105" font-size="12" text-anchor="middle" fill="#ffffff" font-family="Arial">NUTRITION+</text>
+  <text x="150" y="154" font-size="16" text-anchor="middle" fill="#225b3f" font-family="Arial" font-weight="700">Pet Multivitamin</text>
+  <text x="150" y="176" font-size="13" text-anchor="middle" fill="#4a8666" font-family="Arial">Daily Support</text>
+  <circle cx="126" cy="210" r="10" fill="#d9f5e5"/>
+  <circle cx="150" cy="210" r="10" fill="#c8f0da"/>
+  <circle cx="174" cy="210" r="10" fill="#b7ebce"/>
+</svg>
+

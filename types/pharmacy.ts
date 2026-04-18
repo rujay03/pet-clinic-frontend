@@ -13,6 +13,8 @@ export interface InventoryMedicine {
   medicineId: string;
   groupName: string;
   stockQuantity: number;
+  reorderLevel?: number;
+  lastUpdated?: string;
 }
 
 export interface MedicineGroup {

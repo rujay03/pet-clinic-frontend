@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="bg1" x1="0" x2="1">
+      <stop offset="0" stop-color="#eef5ff"/>
+      <stop offset="1" stop-color="#e6f9f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="300" fill="url(#bg1)"/>
+  <rect x="54" y="58" width="192" height="184" rx="18" fill="#ffffff" stroke="#cfd9ea" stroke-width="4"/>
+  <rect x="54" y="58" width="192" height="42" rx="18" fill="#2f7afc"/>
+  <text x="150" y="84" font-size="14" text-anchor="middle" fill="#ffffff" font-family="Arial">VETCARE</text>
+  <text x="150" y="136" font-size="20" text-anchor="middle" fill="#1f2b46" font-family="Arial" font-weight="700">Canine Dewormer</text>
+  <text x="150" y="163" font-size="14" text-anchor="middle" fill="#4d5b78" font-family="Arial">Flavored Tablets</text>
+  <circle cx="96" cy="196" r="22" fill="#e7f0ff" stroke="#9ab7ef"/>
+  <path d="M85 196h22M96 185v22" stroke="#2f7afc" stroke-width="4" stroke-linecap="round"/>
+  <text x="150" y="206" font-size="13" text-anchor="middle" fill="#5b6986" font-family="Arial">Pack of 10</text>
+</svg>
+

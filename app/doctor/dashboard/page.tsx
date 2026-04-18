@@ -6,6 +6,7 @@ import { ApiError, apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import type { DoctorDashboardResponse } from "@/types/doctorDashboard";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -79,11 +80,13 @@ function TopNavBar({ userEmail }: { userEmail: string }) {
     <nav className="bg-[#2D2B6B] text-white px-6 py-3 flex items-center justify-between">
       <div className="flex items-center gap-8">
         <Link href="/doctor/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-            </svg>
-          </div>
+          <Image
+            src="/logo.svg"
+            alt="PetCore logo"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
           <span className="text-lg font-bold tracking-wide">PetCore</span>
         </Link>
 

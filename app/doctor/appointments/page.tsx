@@ -1,6 +1,7 @@
 // app/doctor/appointments/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,11 +33,13 @@ function TopNavBar({ userEmail }: { userEmail: string }) {
       <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between">
         <div className="flex items-center gap-8">
           <Link href="/doctor/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
-              <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="Doctor logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-md object-cover"
+            />
             <span className="text-lg font-bold tracking-wide">PetCore</span>
           </Link>
 
@@ -90,7 +93,7 @@ export default function DoctorAppointmentsPage() {
 
         <div className="mx-auto w-full max-w-[1400px] px-6 py-7">
           <div className="mb-6">
-            <h1 className="text-5xl font-semibold text-[#22195E]">Appointments</h1>
+            <h1 className="text-3xl font-semibold text-[#22195E]">Appointments</h1>
             <p className="mt-1 text-2xl text-[#59529A]">Manage your appointments.</p>
           </div>
 
