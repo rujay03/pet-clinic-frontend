@@ -46,21 +46,19 @@ export default function DateTimeStep({
   }, []);
 
   // Fetch slots when doctor/date change
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!doctorId || !selectedDate) {
-      setSlots([]);
       return;
     }
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = toLocalIsoDate(selectedDate);
     setLoadingSlots(true);
     setSlotsError(null);
     apiFetch<AvailableSlot[]>(`/api/doctors/${doctorId}/available-slots?date=${dateStr}`)
       .then((res) => {
         setSlots(res);
-        // If the previously selected time is no longer valid, clear it
-        if (!res.some((s) => s.slotStart === selectedTime)) {
-          setSelectedTime("");
-        }
+        // If the previously selected time is no longer valid, clear it.
+        setSelectedTime((prev) => (res.some((s) => s.slotStart === prev) ? prev : ""));
       })
       .catch(() => setSlotsError("Failed to load available slots"))
       .finally(() => setLoadingSlots(false));
@@ -224,6 +222,12 @@ export default function DateTimeStep({
       </div>
     </form>
   );
+}
+
+function toLocalIsoDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 function formatSlotLabel(start: string, end: string) {

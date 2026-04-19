@@ -2,20 +2,19 @@
 
 export type DoctorAppointmentTab = "ALL" | "TODAY" | "UPCOMING" | "COMPLETED";
 
-export type DoctorAppointmentUiStatus =
-  | "Upcoming"
-  | "Waiting"
-  | "In Consultation"
-  | "Completed"
-  | "Cancelled";
+export type DoctorAppointmentUiStatus = "Upcoming" | "Completed" | "Cancelled";
 
 export interface DoctorAppointment {
   id: number;
+  ownerId: number;
   ownerName: string;
   phoneNumber: string;
+  petId: number;
   petName: string;
   appointmentDate: string;
   appointmentTime: string;
+  appointmentType: string;
+  notes?: string | null;
   status: DoctorAppointmentUiStatus;
   statusCode: string;
 }

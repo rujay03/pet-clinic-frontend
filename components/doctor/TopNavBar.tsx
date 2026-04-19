@@ -1,0 +1,84 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface TopNavBarProps {
+  userEmail: string;
+}
+
+export default function TopNavBar({ userEmail }: TopNavBarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const navLinks = [
+    { name: "Dashboard", href: "/doctor/dashboard" },
+    { name: "Appointments", href: "/doctor/appointments" },
+    { name: "Pets", href: "/doctor/manage-pets" },
+  ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      localStorage.removeItem("token");
+      router.push("/doctor/login");
+    }
+  };
+
+  return (
+    <nav className="bg-[#2D2B6B] px-6 py-3 text-white">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between">
+        <div className="flex items-center gap-8">
+          <Link href="/doctor/dashboard" className="flex items-center gap-2">
+            <Image
+              src="/logo.svg"
+              alt="Doctor logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-md object-cover"
+            />
+            <span className="text-lg font-bold tracking-wide">PetCore</span>
+          </Link>
+
+          <div className="flex items-center gap-6">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative pb-1 text-sm font-medium transition-colors ${
+                    isActive ? "text-white" : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  {link.name}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-blue-400" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-white/90">
+            Hello Dr. {userEmail?.split("@")[0] || "Doctor"}
+          </span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-lg border border-white/40 px-4 py-1.5 text-sm font-medium hover:bg-white/10"
+          >
+            Log out
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+}
+

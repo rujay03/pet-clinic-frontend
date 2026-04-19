@@ -11,7 +11,7 @@ interface AddPetOwnerModalProps {
     email: string;
     address: string;
     telephone: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export default function AddPetOwnerModal({
@@ -50,11 +50,14 @@ export default function AddPetOwnerModal({
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      onAdd(formData);
+    try {
+      await onAdd(formData);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add pet owner";
+      setError(message);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -219,4 +222,3 @@ export default function AddPetOwnerModal({
     </div>
   );
 }
-

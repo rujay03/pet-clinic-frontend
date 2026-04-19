@@ -12,7 +12,7 @@ interface AddPetModalProps {
     breed: string;
     gender: string;
     dateOfBirth: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export default function AddPetModal({
@@ -47,7 +47,6 @@ export default function AddPetModal({
       return;
     }
 
-    // Check if date is in the future
     const selectedDate = new Date(formData.dateOfBirth);
     const today = new Date();
     if (selectedDate > today) {
@@ -57,11 +56,14 @@ export default function AddPetModal({
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      onAdd(formData);
+    try {
+      await onAdd(formData);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add pet";
+      setError(message);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -239,4 +241,3 @@ export default function AddPetModal({
     </div>
   );
 }
-

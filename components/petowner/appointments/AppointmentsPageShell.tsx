@@ -26,6 +26,29 @@ function toIsoDay(value: string) {
   return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
 }
 
+function parseAppointmentDateTime(dateValue: string, timeValue: string) {
+  if (!dateValue) return null;
+
+  // If backend already returns full datetime, use it directly.
+  if (dateValue.includes("T")) {
+    const parsed = new Date(dateValue);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  const isoDay = toIsoDay(dateValue);
+  if (!isoDay) return null;
+
+  const cleanTime = (timeValue || "").trim();
+  const normalizedTime = /^\d{2}:\d{2}(:\d{2})?$/.test(cleanTime)
+    ? cleanTime
+    : "00:00";
+
+  const parsed = new Date(`${isoDay}T${normalizedTime}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed;
+}
+
 export default function AppointmentsPageShell() {
   // ── data ──
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -125,9 +148,17 @@ export default function AppointmentsPageShell() {
   const upcoming = useMemo(
     () =>
       applyFilters(
-        appointments.filter(
-          (a) => a.status === "Confirmed" || a.status === "Pending",
-        ),
+        appointments.filter((a) => {
+          if (a.status !== "Confirmed" && a.status !== "Pending") return false;
+
+          const appointmentDateTime = parseAppointmentDateTime(
+            a.appointmentDate,
+            a.appointmentTime,
+          );
+          if (!appointmentDateTime) return false;
+
+          return appointmentDateTime.getTime() >= Date.now();
+        }),
       ),
     [appointments, applyFilters],
   );
