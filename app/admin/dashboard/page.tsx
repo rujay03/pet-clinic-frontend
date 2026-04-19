@@ -2,8 +2,16 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import type {
+  AdminDashboardAppointmentItem,
+  AdminDashboardResponse,
+  AdminDashboardStats,
+  AdminDashboardUserItem,
+} from "@/types/adminDashboard";
 
 const navItems = [
   { label: "Dashboard", href: "/admin/dashboard", active: true },
@@ -13,101 +21,9 @@ const navItems = [
   { label: "Medicine", href: "#", active: false },
 ];
 
-const registrationRows = [
-  {
-    initials: "HS",
-    name: "Hirusha Subasinghe",
-    email: "admin@petcore.com",
-    role: "Admin",
-    badgeClass: "bg-[#5564ef] text-white",
-  },
-  {
-    initials: "KP",
-    name: "Dr. Kishani Perera",
-    email: "kishani@petcore.com",
-    role: "Doctor",
-    badgeClass: "bg-[#5c86ff] text-white",
-  },
-  {
-    initials: "TD",
-    name: "Thilini Dasanayake",
-    email: "thilini@petcore.com",
-    role: "Pet Owner",
-    badgeClass: "bg-[#9adfca] text-[#1f5d4f]",
-  },
-];
-
-const appointmentRows = [
-  {
-    initials: "K",
-    name: "Kitty",
-    owner: "Thilini Dasayake",
-    doctor: "Dr. Kishani Perera",
-    time: "10:00 AM",
-    badgeClass: "bg-[#f0df9f] text-[#946b00]",
-  },
-  {
-    initials: "M",
-    name: "Max",
-    owner: "John Wick",
-    doctor: "Dr. Kavindu Perera",
-    time: "02:00 PM",
-    badgeClass: "bg-[#b4e2d9] text-[#2b6559]",
-  },
-  {
-    initials: "B",
-    name: "Bella",
-    owner: "Hirusha Subasinghe",
-    doctor: "Dr. Kavindu Perera",
-    time: "04:00 PM",
-    badgeClass: "bg-[#f4c5cc] text-[#ab2b40]",
-  },
-];
-
-const statsCards = [
-  {
-    title: "Total Users",
-    subtitle: "All system users",
-    value: "185",
-    iconClass: "bg-[#07b4a5]",
-    cardClass: "from-[#ecf7f7] to-[#d5eeeb] border-[#c7e3df]",
-    iconPath:
-      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
-  },
-  {
-    title: "Pet Owners",
-    subtitle: "Active accounts",
-    value: "118",
-    iconClass: "bg-[#ffb300]",
-    cardClass: "from-[#fcf6e8] to-[#f7efdd] border-[#efdfbb]",
-    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
-  },
-  {
-    title: "Doctors",
-    subtitle: "Licensed doctors",
-    value: "21",
-    iconClass: "bg-[#3272ff]",
-    cardClass: "from-[#f0f1fb] to-[#e6e9fa] border-[#d6daf2]",
-    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
-  },
-  {
-    title: "Pharmacy & Staff",
-    subtitle: "POS & reception",
-    value: "46",
-    iconClass: "bg-[#ff3f81]",
-    cardClass: "from-[#fbeef4] to-[#f9e6f0] border-[#ecd1dd]",
-    iconPath:
-      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
-  },
-];
-
 const headerActions = [
   {
     label: "Search",
-    path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
-  },
-  {
-    label: "Quick Search",
     path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
   },
   {
@@ -116,8 +32,153 @@ const headerActions = [
   },
 ];
 
+const defaultStats: AdminDashboardStats = {
+  totalUsers: 0,
+  petOwners: 0,
+  doctors: 0,
+  pharmacyStaff: 0,
+};
+
+const cardMeta: Array<{
+  key: keyof AdminDashboardStats;
+  title: string;
+  subtitle: string;
+  iconClass: string;
+  cardClass: string;
+  iconPath: string;
+}> = [
+  {
+    key: "totalUsers",
+    title: "Total Users",
+    subtitle: "All registered users",
+    iconClass: "bg-[#07b4a5]",
+    cardClass: "from-[#ecf7f7] to-[#d5eeeb] border-[#c7e3df]",
+    iconPath:
+      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
+  },
+  {
+    key: "petOwners",
+    title: "Pet Owners",
+    subtitle: "Owner accounts",
+    iconClass: "bg-[#ffb300]",
+    cardClass: "from-[#fcf6e8] to-[#f7efdd] border-[#efdfbb]",
+    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
+  },
+  {
+    key: "doctors",
+    title: "Doctors",
+    subtitle: "Doctor accounts",
+    iconClass: "bg-[#3272ff]",
+    cardClass: "from-[#f0f1fb] to-[#e6e9fa] border-[#d6daf2]",
+    iconPath: "M12 12a4 4 0 100-8 4 4 0 000 8M5 20a7 7 0 0114 0",
+  },
+  {
+    key: "pharmacyStaff",
+    title: "Pharmacy Staff",
+    subtitle: "Pharmacist accounts",
+    iconClass: "bg-[#ff3f81]",
+    cardClass: "from-[#fbeef4] to-[#f9e6f0] border-[#ecd1dd]",
+    iconPath:
+      "M16 14a4 4 0 00-8 0M12 11a3 3 0 100-6 3 3 0 000 6M5 18a3 3 0 113-3M19 18a3 3 0 10-3-3",
+  },
+];
+
+function prettifyRole(role: string): string {
+  if (!role) return "User";
+  return role
+    .replace(/^ROLE_/i, "")
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "NA";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function getUserBadgeClass(role: string): string {
+  const normalized = role.replace(/^ROLE_/i, "").toUpperCase();
+  if (normalized === "ADMIN") return "bg-[#5564ef] text-white";
+  if (normalized === "DOCTOR") return "bg-[#5c86ff] text-white";
+  if (normalized === "PETOWNER") return "bg-[#9adfca] text-[#1f5d4f]";
+  return "bg-[#f0df9f] text-[#946b00]";
+}
+
+function getUserStatusBadge(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === "ACTIVE") return "bg-[#daf4e6] text-[#1b8a61]";
+  if (normalized === "SUSPENDED") return "bg-[#ffe7d9] text-[#b05118]";
+  return "bg-[#f4c5cc] text-[#ab2b40]";
+}
+
+function getAppointmentBadge(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === "CONFIRMED") return "bg-[#b4e2d9] text-[#2b6559]";
+  if (normalized === "PENDING") return "bg-[#f0df9f] text-[#946b00]";
+  if (normalized === "COMPLETED") return "bg-[#dce5ff] text-[#2a4eb8]";
+  if (normalized === "IN_CONSULTATION") return "bg-[#dce5ff] text-[#2a4eb8]";
+  return "bg-[#f4c5cc] text-[#ab2b40]";
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
+  const [dashboard, setDashboard] = useState<AdminDashboardResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadDashboard = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+
+        // Try primary route first, then fallback route for compatibility.
+        let response: AdminDashboardResponse | null = null;
+        try {
+          response = await apiFetch<AdminDashboardResponse>("/api/dashboard/admin");
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 404) {
+            response = await apiFetch<AdminDashboardResponse>("/api/admin/dashboard");
+          } else {
+            throw error;
+          }
+        }
+
+        setDashboard(response);
+      } catch (error) {
+        const message =
+          error instanceof ApiError ? error.message : "Failed to load admin dashboard data.";
+        setLoadError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadDashboard();
+  }, [user]);
+
+  const stats = dashboard?.stats ?? defaultStats;
+  const registrationRows = dashboard?.recentUsers ?? [];
+  const appointmentRows = dashboard?.todayAppointments ?? [];
+
+  const statsCards = useMemo(
+    () =>
+      cardMeta.map((card) => ({
+        ...card,
+        value: String(stats[card.key]),
+      })),
+    [stats],
+  );
 
   if (!user) {
     return null;
@@ -190,58 +251,30 @@ export default function AdminDashboardPage() {
             <span className="text-[#2d396e]">Dashboard</span>
           </div>
 
-          <section className="mt-8 grid gap-5 xl:grid-cols-3">
-            <div className="grid gap-5 md:grid-cols-2 xl:col-span-2">
-              {statsCards.map((card) => (
-                <div
-                  key={card.title}
-                  className={`rounded-[20px] border bg-gradient-to-br p-6 ${card.cardClass}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-base text-[#2d365f]">{card.title}</p>
-                      <p className="mt-2 text-xs text-[#5c668f]">{card.subtitle}</p>
-                    </div>
-                    <div className={`grid h-14 w-14 place-items-center rounded-2xl ${card.iconClass} text-white`}>
-                      <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="mt-7 text-2xl font-semibold leading-none text-[#1d2552]">{card.value}</p>
-                  <p className="mt-3 text-xs text-[#5d678f]">{card.subtitle}</p>
-                </div>
-              ))}
-            </div>
+          {loadError ? (
+            <div className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</div>
+          ) : null}
 
-            <div className="rounded-[20px] border border-[#d9dced] bg-white/70 p-6">
-              <h2 className="font-semibold text-[#1d2553]">System Status</h2>
-
-              <div className="mt-6 space-y-6 text-[#2c3664]">
-                <div className="flex items-start justify-between border-b border-[#e8eaf5] pb-5">
+          <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {statsCards.map((card) => (
+              <div
+                key={card.title}
+                className={`rounded-[20px] border bg-gradient-to-br p-6 ${card.cardClass}`}
+              >
+                <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-xl font-medium text-[#16b58e]">+18 New</p>
-                    <p className="mt-1 text-xs text-[#62709d]">(last 7 days) ^</p>
+                    <p className="text-base text-[#2d365f]">{card.title}</p>
+                    <p className="mt-2 text-xs text-[#5c668f]">{card.subtitle}</p>
                   </div>
-                  <div className="text-right text-xl font-semibold text-[#15b287]">
-                    <p>+18</p>
-                    <p className="text-sm">^ 2</p>
+                  <div className={`grid h-14 w-14 place-items-center rounded-2xl ${card.iconClass} text-white`}>
+                    <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.iconPath} />
+                    </svg>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between border-b border-[#e8eaf5] pb-5">
-                  <p className="text-base">Blocked accounts</p>
-                  <p className="text-xl font-semibold text-[#eb364f]">3</p>
-                </div>
-
-                <div className="flex items-center justify-between text-base">
-                  <p>Last backup</p>
-                  <p>Today 02:15 AM</p>
-                </div>
-
-                <p className="text-base">Admin Activity</p>
+                <p className="mt-7 text-2xl font-semibold leading-none text-[#1d2552]">{isLoading ? "..." : card.value}</p>
               </div>
-            </div>
+            ))}
           </section>
 
           <section className="mt-6 grid gap-5 xl:grid-cols-3">
@@ -270,63 +303,70 @@ export default function AdminDashboardPage() {
               <p className="mt-7 text-lg font-medium text-[#1f295a]">Recent Registrations</p>
 
               <div className="mt-4 overflow-hidden rounded-2xl border border-[#dee1ef]">
-                {registrationRows.map((row) => (
-                  <div
-                    key={row.email}
-                    className="grid grid-cols-[1.6fr_0.6fr_0.35fr] items-center border-b border-[#eceef6] bg-white px-4 py-4 text-xs last:border-b-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`grid h-12 w-12 place-items-center rounded-full text-sm font-semibold ${row.badgeClass}`}
-                      >
-                        {row.initials}
-                      </div>
-                      <div>
-                        <p className="text-[#1f2957]">{row.name}</p>
-                        <p className="text-xs text-[#65729e]">{row.email}</p>
-                      </div>
-                    </div>
-                    <p className="text-[#516090]">{row.role}</p>
-                    <span className="inline-flex w-fit rounded-xl bg-[#daf4e6] px-3 py-1 text-xs text-[#1b8a61]">
-                      Active
-                    </span>
+                {registrationRows.length === 0 ? (
+                  <div className="bg-white px-4 py-8 text-center text-sm text-[#65729e]">
+                    {isLoading ? "Loading users..." : "No users found."}
                   </div>
-                ))}
+                ) : (
+                  registrationRows.map((row: AdminDashboardUserItem) => (
+                    <div
+                      key={row.id}
+                      className="grid grid-cols-[1.6fr_0.6fr_0.35fr] items-center border-b border-[#eceef6] bg-white px-4 py-4 text-xs last:border-b-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`grid h-12 w-12 place-items-center rounded-full text-sm font-semibold ${getUserBadgeClass(row.role)}`}
+                        >
+                          {getInitials(row.displayName)}
+                        </div>
+                        <div>
+                          <p className="text-[#1f2957]">{row.displayName}</p>
+                          <p className="text-xs text-[#65729e]">{row.email}</p>
+                        </div>
+                      </div>
+                      <p className="text-[#516090]">{prettifyRole(row.role)}</p>
+                      <span className={`inline-flex w-fit rounded-xl px-3 py-1 text-xs ${getUserStatusBadge(row.status)}`}>
+                        {prettifyRole(row.status)}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
             <div className="rounded-[20px] border border-[#d8dceb] bg-white/70 p-6">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-[#1d2553]">Today&apos;s Appointments</h2>
-                <Link href="#" className="text-xs text-[#2366ff] hover:underline">
+                <Link href="/admin/appointments" className="text-xs text-[#2366ff] hover:underline">
                   View All
                 </Link>
               </div>
 
               <div className="mt-4 divide-y divide-[#e8eaf4] rounded-2xl border border-[#e4e7f3] bg-white">
-                {appointmentRows.map((row) => (
-                  <div key={`${row.name}-${row.time}`} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`grid h-12 w-12 place-items-center rounded-full text-sm font-medium ${row.badgeClass}`}
-                      >
-                        {row.initials}
-                      </div>
-                      <div>
-                        <p className="text-base font-medium text-[#1f295a]">{row.name}</p>
-                        <p className="text-xs text-[#4a5688]">{row.owner}</p>
-                        <p className="text-xs text-[#6a759f]">{row.doctor}</p>
-                      </div>
-                    </div>
-                    <p className="text-base font-medium text-[#1e2957]">{row.time}</p>
+                {appointmentRows.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-[#65729e]">
+                    {isLoading ? "Loading appointments..." : "No appointments for today."}
                   </div>
-                ))}
-              </div>
+                ) : (
+                  appointmentRows.map((row: AdminDashboardAppointmentItem) => (
+                    <div key={row.id} className="grid grid-cols-[1fr_auto] gap-3 px-4 py-4">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`grid h-12 w-12 place-items-center rounded-full text-sm font-medium ${getAppointmentBadge(row.status)}`}
+                        >
+                          {getInitials(row.petName).slice(0, 1)}
+                        </div>
+                        <div>
+                          <p className="text-base font-medium text-[#1f295a]">{row.petName}</p>
+                          <p className="text-xs text-[#4a5688]">{row.ownerName}</p>
+                          <p className="text-xs text-[#6a759f]">{row.doctorName}</p>
+                        </div>
+                      </div>
 
-              <div className="mt-4 text-right">
-                <Link href="#" className="text-xs text-[#2366ff] hover:underline">
-                  View All
-                </Link>
+                      <p className="text-base font-medium text-[#1e2957]">{row.time}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </section>

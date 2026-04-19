@@ -11,8 +11,9 @@ interface InventoryTableProps {
   sortKey: SortKey;
   sortDirection: SortDirection;
   onSort: (key: SortKey) => void;
-  onViewDetail: (medicineId: string) => void;
-  onAdjustStock: (medicineId: string, delta: number) => void;
+  onView: (medicineId: string) => void;
+  onEdit: (medicineId: string) => void;
+  onDelete: (medicineId: string) => void;
 }
 
 function getStockStatus(quantity: number, reorderLevel: number) {
@@ -62,8 +63,9 @@ export default function InventoryTable({
   sortKey,
   sortDirection,
   onSort,
-  onViewDetail,
-  onAdjustStock,
+  onView,
+  onEdit,
+  onDelete,
 }: InventoryTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#dce2ef] bg-white">
@@ -160,39 +162,24 @@ export default function InventoryTable({
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => onAdjustStock(medicine.id, -5)}
-                      className="grid h-8 w-8 place-items-center rounded-lg border border-[#d2d9ec] text-[#2a3a70] hover:bg-[#eef3ff]"
-                      aria-label={`Decrease stock for ${medicine.name}`}
+                      onClick={() => onView(medicine.id)}
+                      className="rounded-lg border border-[#d2d9ec] px-3 py-1.5 text-sm font-medium text-[#2a3a70] hover:bg-[#eef3ff]"
                     >
-                      -
+                      View
                     </button>
                     <button
                       type="button"
-                      onClick={() => onAdjustStock(medicine.id, 5)}
-                      className="grid h-8 w-8 place-items-center rounded-lg border border-[#d2d9ec] text-[#2a3a70] hover:bg-[#eef3ff]"
-                      aria-label={`Increase stock for ${medicine.name}`}
+                      onClick={() => onEdit(medicine.id)}
+                      className="rounded-lg border border-[#d2d9ec] px-3 py-1.5 text-sm font-medium text-[#2a3a70] hover:bg-[#eef3ff]"
                     >
-                      +
+                      Edit
                     </button>
                     <button
                       type="button"
-                      onClick={() => onViewDetail(medicine.id)}
-                      className="flex items-center gap-2 text-[20px] font-medium text-[#1d2c66] transition-colors hover:text-[#1f5fe0]"
+                      onClick={() => onDelete(medicine.id)}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
                     >
-                      View Full Detail
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                      Delete
                     </button>
                   </div>
                 </td>

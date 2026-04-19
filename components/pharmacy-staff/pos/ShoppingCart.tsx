@@ -69,9 +69,17 @@ export default function ShoppingCart({
             {cartItems.map((item, index) => (
               <div key={item.product.id} className="rounded-2xl border border-[#dce1ec] bg-[#f9faff] p-4">
                 <div className="mb-2 flex items-start justify-between gap-3">
-                  <p className="text-base font-medium leading-tight text-[#1e2757]">
-                    {index + 1}. {item.product.name}
-                  </p>
+                  <div>
+                    <p className="text-base font-medium leading-tight text-[#1e2757]">
+                      {index + 1}. {item.product.name}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-[#5d6b95]">
+                      {item.product.itemType}
+                    </p>
+                    {item.product.description ? (
+                      <p className="mt-1 text-xs text-[#6f7a9f]">{item.product.description}</p>
+                    ) : null}
+                  </div>
                   <button
                     onClick={() => onRemoveItem(item.product.id)}
                     className="text-[#ff4b4b] transition-colors hover:text-[#d83434]"
