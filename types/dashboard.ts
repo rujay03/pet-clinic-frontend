@@ -33,7 +33,7 @@ export interface DashboardAppointment {
 }
 
 export interface DashboardPrescription {
-  id: number;
+  id: string;
   petId: number;
   petName: string;
   medication: string;
@@ -59,4 +59,3 @@ export interface BillingHistoryItem {
   amount: number;
   status: 'Paid' | 'Pending' | 'Overdue';
 }
-

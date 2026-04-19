@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, FormEvent, useRef } from "react";
+import { useState, FormEvent, useRef, useEffect } from "react";
 import Image from "next/image";
-import { apiFetchMultipart } from "@/lib/api";
+import { ApiError, apiFetch, apiFetchMultipart } from "@/lib/api";
 import type { Pet } from "@/types/pet";
 
 interface AddPetModalProps {
@@ -13,6 +13,9 @@ interface AddPetModalProps {
 export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [speciesOptions, setSpeciesOptions] = useState<string[]>([]);
+  const [speciesLoading, setSpeciesLoading] = useState(true);
+  const [speciesError, setSpeciesError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +28,36 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
     dateOfBirth: "",
     notes: "",
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSpecies = async () => {
+      try {
+        setSpeciesLoading(true);
+        setSpeciesError(null);
+        const response = await apiFetch<string[]>("/api/pets/species");
+        if (!isMounted) return;
+        setSpeciesOptions(
+          response
+            .map((name) => name?.trim())
+            .filter((name): name is string => Boolean(name)),
+        );
+      } catch (err: unknown) {
+        if (!isMounted) return;
+        const message = err instanceof ApiError ? err.message : "Failed to load pet species.";
+        setSpeciesError(message);
+      } finally {
+        if (isMounted) setSpeciesLoading(false);
+      }
+    };
+
+    void loadSpecies();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,20 +223,27 @@ export default function AddPetModal({ onClose, onSuccess }: AddPetModalProps) {
               onChange={(e) =>
                 setFormData({ ...formData, species: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
               required
+              disabled={speciesLoading || speciesOptions.length === 0}
             >
               <option value="" className="text-black">
-                Select species
+                {speciesLoading ? "Loading species..." : "Select species"}
               </option>
-              <option value="Dog">Dog</option>
-              <option value="Cat">Cat</option>
-              <option value="Bird">Bird</option>
-              <option value="Rabbit">Rabbit</option>
-              <option value="Cow">Cow</option>
-              <option value="Goat">Goat</option>
-              <option value="Pig">Pig</option>
+              {speciesOptions.map((speciesName) => (
+                <option key={speciesName} value={speciesName}>
+                  {speciesName}
+                </option>
+              ))}
             </select>
+            {speciesError && (
+              <p className="mt-2 text-xs text-red-600">{speciesError}</p>
+            )}
+            {!speciesLoading && !speciesError && speciesOptions.length === 0 && (
+              <p className="mt-2 text-xs text-amber-700">
+                No species available in catalog.
+              </p>
+            )}
           </div>
 
           {/* Breed */}

@@ -22,7 +22,7 @@ export default function BookingSuccessModal({
         <div className="flex flex-col items-center text-center">
           {/* Title */}
           <h1 className="mb-12 text-3xl font-bold text-gray-900">
-            Booking Confirmed
+            Order Confirmed
           </h1>
 
           {/* Success Illustration */}
@@ -151,9 +151,8 @@ export default function BookingSuccessModal({
 
           {/* Message */}
           <p className="max-w-md text-base leading-relaxed text-gray-600">
-            Thank you for caring to your pet and trust Pawcare services! Here's
-            your booking information. You can let our receptionist know by
-            showing your booking ID
+            Your demo payment is confirmed and your appointment is booked
+            successfully. You can view the booking in your upcoming appointments.
           </p>
 
           {/* Action button */}

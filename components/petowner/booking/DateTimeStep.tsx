@@ -15,7 +15,7 @@ interface DateTimeStepProps {
     note: string;
     doctorId?: string;
   };
-  onNext: (data: any) => void;
+  onNext: (data: { selectedDate: Date; selectedTime: string; doctorId: string }) => void;
   onBack: () => void;
   submitting?: boolean;
 }
@@ -217,7 +217,7 @@ export default function DateTimeStep({
           disabled={submitting || !doctorId || !selectedDate || !selectedTime}
           className="rounded-lg bg-[#6366F1] px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-[#5558E3] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {submitting ? "Booking…" : "Confirm Booking"}
+          Continue to Payment
         </button>
       </div>
     </form>

@@ -284,12 +284,14 @@ export default function ManagePetsPage() {
     prescribedAt: string;
     diagnosis: string;
     notes: string;
-    medicineId: number;
-    dosage: string;
-    frequency: string;
-    durationDays: number;
-    quantity: number;
-    instructions: string;
+    items: {
+      medicineId: number;
+      dosage: string;
+      frequency: string;
+      durationDays: number;
+      quantity: number;
+      instructions: string;
+    }[];
   }) => {
     if (!selectedPet) {
       return;
@@ -304,16 +306,14 @@ export default function ManagePetsPage() {
           prescribedAt: normalizeDateTimeLocal(payload.prescribedAt),
           diagnosis: payload.diagnosis || null,
           notes: payload.notes || null,
-          items: [
-            {
-              medicineId: payload.medicineId,
-              dosage: payload.dosage,
-              frequency: payload.frequency,
-              durationDays: payload.durationDays,
-              quantity: payload.quantity,
-              instructions: payload.instructions || null,
-            },
-          ],
+          items: payload.items.map((item) => ({
+            medicineId: item.medicineId,
+            dosage: item.dosage,
+            frequency: item.frequency,
+            durationDays: item.durationDays,
+            quantity: item.quantity,
+            instructions: item.instructions || null,
+          })),
         },
       });
 
@@ -324,6 +324,157 @@ export default function ManagePetsPage() {
       setRecordSaveError("Failed to save prescription.");
       throw new Error("Failed to save prescription");
     }
+  };
+
+  const escapeHtml = (value?: string | null) => {
+    if (!value) return "-";
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  };
+
+  const buildPrescriptionReceiptHtml = (prescription: Prescription) => {
+    const itemRows = prescription.items
+      .map(
+        (item, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(item.medicineName)}</td>
+            <td>${escapeHtml(item.dosage)}</td>
+            <td>${escapeHtml(item.frequency)}</td>
+            <td>${item.durationDays}</td>
+            <td>${item.quantity}</td>
+            <td>${escapeHtml(item.instructions)}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    return `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Prescription Receipt #${prescription.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 24px; color: #111827; }
+            h1 { margin: 0 0 6px; font-size: 24px; }
+            h2 { margin: 18px 0 8px; font-size: 16px; }
+            p { margin: 4px 0; }
+            .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-top: 10px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px; vertical-align: top; font-size: 13px; }
+            th { background: #f3f4f6; text-align: left; }
+            .footer { margin-top: 28px; display: flex; justify-content: space-between; }
+            .line { margin-top: 32px; border-top: 1px solid #9ca3af; width: 220px; padding-top: 6px; font-size: 12px; }
+            @media print { body { margin: 14px; } }
+          </style>
+        </head>
+        <body>
+          <h1>Prescription Receipt</h1>
+          <p>Receipt No: #${prescription.id}</p>
+
+          <div class="meta">
+            <p><strong>Prescribed At:</strong> ${escapeHtml(formatDateTime(prescription.prescribedAt))}</p>
+            <p><strong>Doctor:</strong> ${escapeHtml(prescription.prescribedByStaffName)}</p>
+            <p><strong>Pet:</strong> ${escapeHtml(selectedPet?.name)}</p>
+            <p><strong>Owner:</strong> ${escapeHtml(selectedOwner?.name)}</p>
+          </div>
+
+          <h2>Clinical Notes</h2>
+          <p><strong>Diagnosis:</strong> ${escapeHtml(prescription.diagnosis)}</p>
+          <p><strong>Prescription Notes:</strong> ${escapeHtml(prescription.notes)}</p>
+
+          <h2>Medicines</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Medicine</th>
+                <th>Dosage</th>
+                <th>Frequency</th>
+                <th>Duration (days)</th>
+                <th>Quantity</th>
+                <th>Instructions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows || '<tr><td colspan="7">No medicine items</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div class="line">Doctor Signature</div>
+            <div class="line">Date</div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const printWithIframe = (html: string) => {
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument;
+    const win = iframe.contentWindow;
+
+    if (!doc || !win) {
+      document.body.removeChild(iframe);
+      return false;
+    }
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    // Print after the iframe document is ready to avoid blank pages.
+    win.onload = () => {
+      win.focus();
+      win.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 500);
+    };
+
+    return true;
+  };
+
+  const handlePrintPrescription = (prescription: Prescription) => {
+    if (!selectedPet || !selectedOwner) {
+      return;
+    }
+
+    setRecordSaveError(null);
+    const html = buildPrescriptionReceiptHtml(prescription);
+
+    if (printWithIframe(html)) {
+      return;
+    }
+
+    // Fallback for browsers that restrict iframe printing.
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!printWindow) {
+      setRecordSaveError("Unable to print receipt. Please allow pop-ups, then try again.");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   useEffect(() => {
@@ -787,7 +938,7 @@ export default function ManagePetsPage() {
                         onClick={() => setShowPrescriptionModal(true)}
                       >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4h6m-7 4h8m-9 0a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2M8 8V6a4 4 0 018 0v2" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4h6m-7 4h8m-9 0a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2H8V6a4 4 0 018 0v2" />
                         </svg>
                         Create Prescription
                       </button>
@@ -797,8 +948,7 @@ export default function ManagePetsPage() {
                         aria-label="Pet settings"
                       >
                         <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m7-7H5" />
                         </svg>
                       </button>
                     </div>
@@ -876,8 +1026,17 @@ export default function ManagePetsPage() {
                           <div key={prescription.id} className="rounded-xl border border-[#d7d9ec] bg-[#f9faff] p-4">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-xl font-semibold text-[#1c2458]">Prescribed: {formatDateTime(prescription.prescribedAt)}</p>
-                              <p className="text-sm text-[#4d5689]">By: {prescription.prescribedByStaffName}</p>
-                            </div>
+                              <div className="flex items-center gap-3">
+                                <p className="text-sm text-[#4d5689]">By: {prescription.prescribedByStaffName}</p>
+                                <button
+                                  type="button"
+                                  onClick={() => handlePrintPrescription(prescription)}
+                                  className="rounded-lg border border-[#cdd1ea] px-3 py-1 text-sm font-medium text-[#2e356d] hover:bg-[#f5f6ff]"
+                                >
+                                  Print Prescription
+                                </button>
+                              </div>
+                             </div>
                             {prescription.diagnosis ? (
                               <p className="mt-2 text-sm text-[#30386f]">Diagnosis: {prescription.diagnosis}</p>
                             ) : null}

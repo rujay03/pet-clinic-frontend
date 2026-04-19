@@ -12,7 +12,7 @@ interface PetOwnerLayoutProps {
 
 export default function PetOwnerLayout({ children }: PetOwnerLayoutProps) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
 
   // Booking views are presented as standalone screens/modals.
   const hideTopNav = pathname.startsWith("/petowner/booking");
@@ -20,10 +20,11 @@ export default function PetOwnerLayout({ children }: PetOwnerLayoutProps) {
   return (
     <ProtectedRoute allowedRoles={["PETOWNER"]}>
       <div className="min-h-screen bg-slate-50">
-        {!hideTopNav && <TopNav userEmail={user?.email} onLogout={logout} />}
+        {!hideTopNav && (
+          <TopNav user={user} onLogout={logout} onProfileSaved={refreshUser} />
+        )}
         {children}
       </div>
     </ProtectedRoute>
   );
 }
-

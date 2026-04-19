@@ -3,8 +3,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import ProfilePopover from "@/components/pharmacy-staff/ProfilePopover";
 
 const kpiCards = [
 	{
@@ -154,7 +156,47 @@ function Bars({ values, color }: { values: number[]; color: string }) {
 }
 
 export default function PharmacyStaffDashboardPage() {
-	const { user, logout } = useAuth();
+	const { user, logout, refreshUser } = useAuth();
+	const [isProfileOpen, setIsProfileOpen] = useState(false);
+	const profileContainerRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		const handleMouseDown = (event: MouseEvent) => {
+			if (!profileContainerRef.current) return;
+			if (!profileContainerRef.current.contains(event.target as Node)) {
+				setIsProfileOpen(false);
+			}
+		};
+
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setIsProfileOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleMouseDown);
+		document.addEventListener("keydown", handleEscape);
+
+		return () => {
+			document.removeEventListener("mousedown", handleMouseDown);
+			document.removeEventListener("keydown", handleEscape);
+		};
+	}, []);
+
+	const handleProfileToggle = async () => {
+		if (isProfileOpen) {
+			setIsProfileOpen(false);
+			return;
+		}
+
+		try {
+			await refreshUser();
+		} catch {
+			// Keep popover available even when refresh fails.
+		}
+
+		setIsProfileOpen(true);
+	};
 
 	if (!user) {
 		return null;
@@ -204,7 +246,7 @@ export default function PharmacyStaffDashboardPage() {
 							</nav>
 						</div>
 
-						<div className="flex items-center gap-4">
+						<div className="relative flex items-center gap-4" ref={profileContainerRef}>
 							<p className="hidden text-base text-white/90 xl:block">
 								{user.email}
 							</p>
@@ -214,9 +256,24 @@ export default function PharmacyStaffDashboardPage() {
 							>
 								Log out
 							</button>
-							<div className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-semibold text-[#1f285b]">
-								T
-							</div>
+							<button
+								type="button"
+								onClick={() => void handleProfileToggle()}
+								className="grid h-12 w-12 place-items-center rounded-full bg-white text-sm font-semibold text-[#1f285b] ring-offset-2 transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white"
+								aria-haspopup="dialog"
+								aria-expanded={isProfileOpen}
+								aria-label="Open profile details"
+							>
+								{user.email[0]?.toUpperCase() || "P"}
+							</button>
+
+							{isProfileOpen && (
+								<ProfilePopover
+									user={user}
+									onSaved={refreshUser}
+									onClose={() => setIsProfileOpen(false)}
+								/>
+							)}
 						</div>
 					</div>
 				</header>

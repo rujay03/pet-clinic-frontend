@@ -6,7 +6,15 @@ export interface LoginRequest {
 export interface MeResponse {
   email: string;
   roles: string[];
-  // add more fields later if your backend returns them
+  fullName?: string | null;
+  contactNo?: string | null;
+  address?: string | null;
+}
+
+export interface UpdateMyProfileRequest {
+  fullName: string;
+  contactNo?: string | null;
+  address?: string | null;
 }
 
 export interface SignupRequest {

@@ -1,15 +1,21 @@
 // app/admin/users/manage/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddUserModal from "@/components/admin/AddUserModal";
 import UserDetailsModal from "@/components/admin/UserDetailsModal";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { ApiError, apiFetch } from "@/lib/api";
+import type {
+  AdminUserResponse,
+  CreateAdminUserRequest,
+  UpdateAdminUserRequest,
+} from "@/types/adminUsers";
 
-type UserStatus = "Active" | "Pending" | "Blocked";
-
+type UserStatus = "Active" | "Inactive" | "Blocked";
 type UserRole = "Admin" | "Doctor" | "Pet Owner" | "Pharmacy Staff";
 
 interface User {
@@ -29,8 +35,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin/dashboard", active: false },
   { label: "Manage Users", href: "/admin/users/manage", active: true },
   { label: "Appointments", href: "/admin/appointments", active: false },
-  { label: "Pets", href: "#", active: false },
-  { label: "Medicine", href: "#", active: false },
+  { label: "Pets", href: "/admin/pets", active: false },
 ];
 
 const ROLE_TABS: Array<{ label: string; value: "ALL" | UserRole }> = [
@@ -39,81 +44,6 @@ const ROLE_TABS: Array<{ label: string; value: "ALL" | UserRole }> = [
   { label: "Doctors", value: "Doctor" },
   { label: "Pet Owners", value: "Pet Owner" },
   { label: "Pharmacy & Staff", value: "Pharmacy Staff" },
-];
-
-const INITIAL_USERS: User[] = [
-  {
-    id: 1,
-    name: "Hirusha Subasinghe",
-    email: "admin@petcore.com",
-    role: "Admin",
-    status: "Active",
-    contactNo: "0771234567",
-    joinedDate: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Dr. Kishani Perera",
-    email: "kishani@petcore.com",
-    role: "Doctor",
-    status: "Active",
-    contactNo: "0772451544",
-    joinedDate: "2024-02-12",
-  },
-  {
-    id: 3,
-    name: "Thilini Dasanayake",
-    email: "thilini@petcore.com",
-    role: "Pet Owner",
-    status: "Active",
-    contactNo: "0775620183",
-    joinedDate: "2024-03-08",
-  },
-  {
-    id: 4,
-    name: "Ankith Sharma",
-    email: "atk@vpetcore.com",
-    role: "Admin",
-    status: "Active",
-    contactNo: "0779510001",
-    joinedDate: "2024-03-22",
-  },
-  {
-    id: 5,
-    name: "Kasun Fernando",
-    email: "kasun@petcore.com",
-    role: "Pharmacy Staff",
-    status: "Pending",
-    contactNo: "0772337788",
-    joinedDate: "2024-04-01",
-  },
-  {
-    id: 6,
-    name: "Nimali Silva",
-    email: "nimali@petcore.com",
-    role: "Pet Owner",
-    status: "Blocked",
-    contactNo: "0778944566",
-    joinedDate: "2024-04-02",
-  },
-  {
-    id: 7,
-    name: "Dr. Kavindu Perera",
-    email: "kavindu@petcore.com",
-    role: "Doctor",
-    status: "Active",
-    contactNo: "0771247788",
-    joinedDate: "2024-04-03",
-  },
-  {
-    id: 8,
-    name: "Ruwanthi Jayasinghe",
-    email: "ruwanthi@petcore.com",
-    role: "Pet Owner",
-    status: "Active",
-    contactNo: "0779988776",
-    joinedDate: "2024-04-05",
-  },
 ];
 
 const PAGE_SIZE = 5;
@@ -127,7 +57,7 @@ const rolePillClass: Record<UserRole, string> = {
 
 const statusPillClass: Record<UserStatus, string> = {
   Active: "bg-[#d2f0e7] text-[#257767]",
-  Pending: "bg-[#fce9bf] text-[#9a6a00]",
+  Inactive: "bg-[#e9ebf4] text-[#525f8b]",
   Blocked: "bg-[#fad9df] text-[#a6334b]",
 };
 
@@ -150,28 +80,93 @@ function getSortValue(user: User, key: SortKey) {
   return user[key].toLowerCase();
 }
 
+function roleFromApi(role: string): UserRole {
+  const normalized = role.toUpperCase();
+  if (normalized === "ADMIN") return "Admin";
+  if (normalized === "DOCTOR") return "Doctor";
+  if (normalized === "PHARMACIST") return "Pharmacy Staff";
+  return "Pet Owner";
+}
+
+function statusFromApi(status: string): UserStatus {
+  const normalized = status.toUpperCase();
+  if (normalized === "ACTIVE") return "Active";
+  if (normalized === "INACTIVE") return "Inactive";
+  return "Blocked";
+}
+
+function roleToApi(role: UserRole): UpdateAdminUserRequest["role"] {
+  if (role === "Admin") return "ADMIN";
+  if (role === "Doctor") return "DOCTOR";
+  if (role === "Pharmacy Staff") return "PHARMACIST";
+  return "PETOWNER";
+}
+
+function statusToApi(status: UserStatus): UpdateAdminUserRequest["status"] {
+  if (status === "Active") return "ACTIVE";
+  if (status === "Inactive") return "INACTIVE";
+  return "SUSPENDED";
+}
+
+function mapApiUser(item: AdminUserResponse): User {
+  return {
+    id: item.id,
+    name: item.name,
+    email: item.email,
+    role: roleFromApi(item.role),
+    status: statusFromApi(item.status),
+    contactNo: item.contactNo ?? undefined,
+    joinedDate: item.joinedDate ?? undefined,
+  };
+}
+
 export default function ManageUsersPage() {
-  const { user } = useAuth();
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const { user, logout } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRoleTab, setActiveRoleTab] = useState<"ALL" | UserRole>("ALL");
-  const [roleFilter, setRoleFilter] = useState<"ALL" | UserRole>("ALL");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const roleCounts = useMemo(() => {
-    return {
+  useEffect(() => {
+    if (!user) {
+      setLoadingUsers(false);
+      return;
+    }
+
+    const loadUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        setLoadError(null);
+        const response = await apiFetch<AdminUserResponse[]>("/api/admin/users");
+        setUsers(response.map(mapApiUser));
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : "Failed to load users";
+        setLoadError(message);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    void loadUsers();
+  }, [user]);
+
+  const roleCounts = useMemo(
+    () => ({
       ALL: users.length,
       Admin: users.filter((item) => item.role === "Admin").length,
       Doctor: users.filter((item) => item.role === "Doctor").length,
       "Pet Owner": users.filter((item) => item.role === "Pet Owner").length,
       "Pharmacy Staff": users.filter((item) => item.role === "Pharmacy Staff").length,
-    };
-  }, [users]);
+    }),
+    [users]
+  );
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -185,9 +180,8 @@ export default function ManageUsersPage() {
           item.role.toLowerCase().includes(query);
 
         const matchesTab = activeRoleTab === "ALL" || item.role === activeRoleTab;
-        const matchesDropdown = roleFilter === "ALL" || item.role === roleFilter;
 
-        return matchesSearch && matchesTab && matchesDropdown;
+        return matchesSearch && matchesTab;
       })
       .sort((a, b) => {
         const aValue = getSortValue(a, sortKey);
@@ -197,7 +191,7 @@ export default function ManageUsersPage() {
         if (sortDirection === "asc") return aValue > bValue ? 1 : -1;
         return aValue > bValue ? -1 : 1;
       });
-  }, [users, searchQuery, activeRoleTab, roleFilter, sortKey, sortDirection]);
+  }, [users, searchQuery, activeRoleTab, sortKey, sortDirection]);
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -217,42 +211,40 @@ export default function ManageUsersPage() {
     setSortDirection("asc");
   };
 
-  const handleRoleTabChange = (role: "ALL" | UserRole) => {
-    setActiveRoleTab(role);
-    setCurrentPage(1);
-  };
-
-  const handleRoleFilterChange = (value: "ALL" | UserRole) => {
-    setRoleFilter(value);
-    setCurrentPage(1);
-  };
-
-  const handleAddUser = (newUser: Omit<User, "id" | "joinedDate">) => {
-    const createdUser: User = {
-      ...newUser,
-      id: users.length + 1,
-      joinedDate: new Date().toISOString().split("T")[0],
+  const handleUpdateUser = async (target: User, payload: { name: string; role: UserRole; status: UserStatus; contactNo?: string }) => {
+    const request: UpdateAdminUserRequest = {
+      name: payload.name,
+      role: roleToApi(payload.role),
+      status: statusToApi(payload.status),
+      contactNo: payload.contactNo?.trim() || undefined,
     };
 
-    setUsers((prev) => [createdUser, ...prev]);
-    setShowAddModal(false);
+    const updated = await apiFetch<AdminUserResponse>(`/api/admin/users/${target.id}`, {
+      method: "PUT",
+      body: request,
+    });
+
+    const mapped = mapApiUser(updated);
+    setUsers((prev) => prev.map((item) => (item.id === mapped.id ? mapped : item)));
+    setSelectedUser(mapped);
+  };
+
+  const handleDeleteUser = async (target: User) => {
+    await apiFetch<void>(`/api/admin/users/${target.id}`, { method: "DELETE" });
+    setUsers((prev) => prev.filter((item) => item.id !== target.id));
+    setSelectedIds((prev) => prev.filter((id) => id !== target.id));
+    setSelectedUser(null);
+  };
+
+  const handleAddUser = async (payload: CreateAdminUserRequest) => {
+    const created = await apiFetch<AdminUserResponse>("/api/admin/users", {
+      method: "POST",
+      body: payload,
+    });
+
+    const mapped = mapApiUser(created);
+    setUsers((prev) => [mapped, ...prev]);
     setCurrentPage(1);
-  };
-
-  const toggleUserSelection = (userId: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  };
-
-  const toggleVisibleUsersSelection = () => {
-    const visibleIds = paginatedUsers.map((currentUser) => currentUser.id);
-    if (allVisibleSelected) {
-      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
-      return;
-    }
-
-    setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
   };
 
   const showingText =
@@ -269,16 +261,8 @@ export default function ManageUsersPage() {
           <div className="mx-auto flex w-full max-w-[1300px] items-center justify-between px-5 py-4 xl:px-8">
             <div className="flex items-center gap-6 xl:gap-10">
               <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/95 text-[#2a3889]">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z"
-                    />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                  </svg>
+                <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white/95">
+                  <Image src="/logo.png" alt="PetCore logo" width={36} height={36} className="h-9 w-9 object-contain" priority />
                 </div>
                 <span className="text-lg font-semibold leading-none tracking-tight">PetCore</span>
               </div>
@@ -303,19 +287,17 @@ export default function ManageUsersPage() {
             <div className="flex items-center gap-3">
               <button
                 className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/10"
-                aria-label="Search"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" />
-                </svg>
-              </button>
-              <button
-                className="grid h-10 w-10 place-items-center rounded-full text-white/90 transition-colors hover:bg-white/10"
                 aria-label="Notifications"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.9} d="M15 17h5l-1.4-1.4a2 2 0 01-.6-1.42V11a6 6 0 10-12 0v3.18a2 2 0 01-.58 1.4L4 17h5m6 0a3 3 0 11-6 0" />
                 </svg>
+              </button>
+              <button
+                onClick={logout}
+                className="rounded-xl border border-white/30 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-white/10"
+              >
+                Logout
               </button>
               <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-semibold text-[#4b58ae]">
                 {user.email[0]?.toUpperCase() || "A"}
@@ -332,6 +314,8 @@ export default function ManageUsersPage() {
             <span className="text-lg text-[#2f3b71]">Manage Users</span>
           </div>
 
+          {loadError ? <div className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</div> : null}
+
           <section className="mt-8 rounded-3xl border border-[#d9dced] bg-white/65 shadow-[0_2px_8px_rgba(37,54,112,0.03)]">
             <div className="border-b border-[#e6e8f2] p-5 lg:p-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -343,42 +327,21 @@ export default function ManageUsersPage() {
                   Add New User
                 </button>
 
-                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row">
-                  <div className="relative min-w-[320px] rounded-xl border border-[#d6d9e8] bg-[#f9faff] pl-12 pr-4">
-                    <div className="pointer-events-none absolute inset-y-0 left-4 grid place-items-center text-[#7884af]">
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" />
-                      </svg>
-                    </div>
-                    <input
-                      value={searchQuery}
-                      onChange={(event) => {
-                        setSearchQuery(event.target.value);
-                        setCurrentPage(1);
-                      }}
-                      placeholder="Search users..."
-                      className="h-12 w-full bg-transparent text-base text-[#2b376f] placeholder:text-[#8e98bd] focus:outline-none"
-                    />
+                <div className="relative min-w-[320px] rounded-xl border border-[#d6d9e8] bg-[#f9faff] pl-12 pr-4">
+                  <div className="pointer-events-none absolute inset-y-0 left-4 grid place-items-center text-[#7884af]">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35" />
+                    </svg>
                   </div>
-
-                  <div className="relative min-w-[200px]">
-                    <select
-                      value={roleFilter}
-                      onChange={(event) => handleRoleFilterChange(event.target.value as "ALL" | UserRole)}
-                      className="h-12 w-full appearance-none rounded-xl border border-[#d6d9e8] bg-[#f9faff] px-4 pr-11 text-base text-[#2b376f] focus:outline-none"
-                    >
-                      <option value="ALL">All Roles</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Doctor">Doctor</option>
-                      <option value="Pet Owner">Pet Owner</option>
-                      <option value="Pharmacy Staff">Pharmacy Staff</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-[#7d89b0]">
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+                  <input
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Search users..."
+                    className="h-12 w-full bg-transparent text-base text-[#2b376f] placeholder:text-[#8e98bd] focus:outline-none"
+                  />
                 </div>
               </div>
 
@@ -389,7 +352,10 @@ export default function ManageUsersPage() {
                   return (
                     <button
                       key={tab.label}
-                      onClick={() => handleRoleTabChange(tab.value)}
+                      onClick={() => {
+                        setActiveRoleTab(tab.value);
+                        setCurrentPage(1);
+                      }}
                       className={`rounded-xl border px-6 py-2.5 text-sm transition md:text-base ${
                         isActive
                           ? "border-[#c5d2ff] bg-[#e9edff] text-[#245ef6]"
@@ -419,38 +385,44 @@ export default function ManageUsersPage() {
                     <input
                       type="checkbox"
                       checked={allVisibleSelected}
-                      onChange={toggleVisibleUsersSelection}
+                      onChange={() => {
+                        const visibleIds = paginatedUsers.map((currentUser) => currentUser.id);
+                        if (allVisibleSelected) {
+                          setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+                        } else {
+                          setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+                        }
+                      }}
                       className="h-6 w-6 rounded border-[#ccd3e9] text-[#4368ff] focus:ring-[#9eb2ff]"
                     />
                   </label>
                   <button onClick={() => handleSort("name")} className="flex items-center gap-2 font-medium">
-                    Name <span className="text-[#7480a8]">{sortKey === "name" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                    Name
                   </button>
                   <button onClick={() => handleSort("email")} className="flex items-center gap-2 font-medium">
-                    Email <span className="text-[#7480a8]">{sortKey === "email" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                    Email
                   </button>
                   <button onClick={() => handleSort("role")} className="flex items-center gap-2 font-medium">
-                    Role <span className="text-[#7480a8]">{sortKey === "role" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                    Role
                   </button>
                   <button onClick={() => handleSort("status")} className="flex items-center gap-2 font-medium">
-                    Status <span className="text-[#7480a8]">{sortKey === "status" ? (sortDirection === "asc" ? "^" : "v") : "^"}</span>
+                    Status
                   </button>
                   <p className="font-medium">Action</p>
                 </div>
 
-                {paginatedUsers.length === 0 ? (
+                {loadingUsers ? (
+                  <div className="py-16 text-center text-lg text-[#7a86ae]">Loading users...</div>
+                ) : paginatedUsers.length === 0 ? (
                   <div className="py-16 text-center text-lg text-[#7a86ae]">No users found for the selected filters.</div>
                 ) : (
                   paginatedUsers.map((currentUser) => (
-                    <div
-                      key={currentUser.id}
-                      className="grid grid-cols-[56px_1.5fr_1.2fr_0.9fr_0.9fr_0.9fr] items-center border-t border-[#eceff7] px-5 py-4"
-                    >
+                    <div key={currentUser.id} className="grid grid-cols-[56px_1.5fr_1.2fr_0.9fr_0.9fr_0.9fr] items-center border-t border-[#eceff7] px-5 py-4">
                       <label className="grid place-items-center">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(currentUser.id)}
-                          onChange={() => toggleUserSelection(currentUser.id)}
+                          onChange={() => setSelectedIds((prev) => (prev.includes(currentUser.id) ? prev.filter((id) => id !== currentUser.id) : [...prev, currentUser.id]))}
                           className="h-6 w-6 rounded border-[#ccd3e9] text-[#4368ff] focus:ring-[#9eb2ff]"
                         />
                       </label>
@@ -479,10 +451,7 @@ export default function ManageUsersPage() {
                         onClick={() => setSelectedUser(currentUser)}
                         className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#ccd3e9] px-6 py-2 text-base text-[#4f5d8f] hover:bg-[#f8f9ff]"
                       >
-                        View
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        Edit
                       </button>
                     </div>
                   ))
@@ -491,32 +460,19 @@ export default function ManageUsersPage() {
 
               <div className="mt-5 flex flex-wrap items-center justify-between gap-4 px-2">
                 <p className="text-sm text-[#5f6da0]">{showingText}</p>
-                <div className="flex items-center gap-3 text-base text-[#6c78a7]">
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={safeCurrentPage === 1}
-                    className="grid h-11 w-11 place-items-center rounded-xl border border-[#d5daea] bg-[#f7f8fc] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <span className="font-medium text-[#2f67ff]">{safeCurrentPage}</span>
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={safeCurrentPage === totalPages}
-                    className="inline-flex items-center gap-2 rounded-xl border border-[#d5daea] bg-[#f7f8fc] px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
               </div>
             </div>
           </section>
         </main>
+
+        {selectedUser && (
+          <UserDetailsModal
+            user={selectedUser}
+            onClose={() => setSelectedUser(null)}
+            onSave={(payload) => handleUpdateUser(selectedUser, payload)}
+            onDelete={() => handleDeleteUser(selectedUser)}
+          />
+        )}
 
         {showAddModal && (
           <AddUserModal
@@ -524,15 +480,7 @@ export default function ManageUsersPage() {
             onAdd={handleAddUser}
           />
         )}
-
-        {selectedUser && (
-          <UserDetailsModal
-            user={selectedUser}
-            onClose={() => setSelectedUser(null)}
-          />
-        )}
       </div>
     </ProtectedRoute>
   );
 }
-

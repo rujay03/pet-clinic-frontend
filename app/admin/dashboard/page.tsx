@@ -1,8 +1,10 @@
 // app/admin/dashboard/page.tsx
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import AdminProfilePopover from "@/components/admin/AdminProfilePopover";
 import { ApiError, apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
@@ -17,15 +19,10 @@ const navItems = [
   { label: "Dashboard", href: "/admin/dashboard", active: true },
   { label: "Manage Users", href: "/admin/users/manage", active: false },
   { label: "Appointments", href: "/admin/appointments", active: false },
-  { label: "Pets", href: "#", active: false },
-  { label: "Medicine", href: "#", active: false },
+  { label: "Pets", href: "/admin/pets", active: false },
 ];
 
 const headerActions = [
-  {
-    label: "Search",
-    path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.35-4.35",
-  },
   {
     label: "Notifications",
     path: "M15 17h5l-1.4-1.4a2 2 0 01-.6-1.42V11a6 6 0 10-12 0v3.18a2 2 0 01-.58 1.4L4 17h5m6 0a3 3 0 11-6 0",
@@ -126,7 +123,9 @@ function getAppointmentBadge(status: string): string {
 }
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+  const profileContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [dashboard, setDashboard] = useState<AdminDashboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -180,6 +179,43 @@ export default function AdminDashboardPage() {
     [stats],
   );
 
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!profileContainerRef.current) return;
+      if (!profileContainerRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  const handleProfileToggle = async () => {
+    if (isProfileOpen) {
+      setIsProfileOpen(false);
+      return;
+    }
+
+    try {
+      await refreshUser();
+    } catch {
+      // Keep popover usable even if refresh fails.
+    }
+    setIsProfileOpen(true);
+  };
+
   if (!user) {
     return null;
   }
@@ -191,16 +227,8 @@ export default function AdminDashboardPage() {
           <div className="mx-auto flex w-full max-w-[1300px] items-center justify-between px-5 py-4 xl:px-8">
             <div className="flex items-center gap-6 xl:gap-10">
               <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/95 text-[#2a3889]">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 2l7 4v6c0 5-3.5 9.2-7 10-3.5-.8-7-5-7-10V6l7-4z"
-                    />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                  </svg>
+                <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white/95">
+                  <Image src="/logo.png" alt="PetCore logo" width={36} height={36} className="h-9 w-9 object-contain" priority />
                 </div>
 
                 <span className="text-lg font-semibold leading-none tracking-tight">PetCore</span>
@@ -223,7 +251,7 @@ export default function AdminDashboardPage() {
               </nav>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="relative flex items-center gap-3" ref={profileContainerRef}>
               {headerActions.map((action) => (
                 <button
                   key={action.label}
@@ -236,9 +264,31 @@ export default function AdminDashboardPage() {
                 </button>
               ))}
 
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-semibold text-[#4b58ae]">
+              <button
+                onClick={logout}
+                className="rounded-xl border border-white/30 px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-white/10"
+              >
+                Logout
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleProfileToggle()}
+                className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-semibold text-[#4b58ae] ring-offset-2 transition hover:bg-white/95 focus:outline-none focus:ring-2 focus:ring-white"
+                aria-haspopup="dialog"
+                aria-expanded={isProfileOpen}
+                aria-label="Open profile details"
+              >
                 {user.email[0]?.toUpperCase() || "D"}
-              </div>
+              </button>
+
+              {isProfileOpen && (
+                <AdminProfilePopover
+                  user={user}
+                  onSaved={refreshUser}
+                  onClose={() => setIsProfileOpen(false)}
+                />
+              )}
             </div>
           </div>
         </header>

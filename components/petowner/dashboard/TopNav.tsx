@@ -2,17 +2,50 @@
 
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { MeResponse } from "@/types/auth";
+import PetOwnerProfilePopover from "@/components/petowner/dashboard/PetOwnerProfilePopover";
 
 interface TopNavProps {
-  userEmail?: string;
+  user?: MeResponse | null;
   onLogout?: () => void;
+  onProfileSaved?: () => void | Promise<void>;
 }
 
-export default function TopNav({ userEmail, onLogout }: TopNavProps) {
+export default function TopNav({
+  user,
+  onLogout,
+  onProfileSaved,
+}: TopNavProps) {
   const pathname = usePathname();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleMouseDown = (event: MouseEvent) => {
+      if (!profileContainerRef.current) return;
+      if (!profileContainerRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const navItems = [
     { href: "/petowner/dashboard", label: "Dashboard" },
@@ -62,10 +95,10 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
         </nav>
 
         {/* Right: user + logout */}
-        <div className="flex items-center gap-3">
-          {userEmail && (
+        <div className="relative flex items-center gap-3" ref={profileContainerRef}>
+          {user?.email && (
             <span className="hidden text-xs text-slate-200 md:inline">
-              {userEmail}
+              {user.email}
             </span>
           )}
           <button
@@ -74,10 +107,24 @@ export default function TopNav({ userEmail, onLogout }: TopNavProps) {
           >
             Log out
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-900">
-            {/* Simple avatar placeholder */}
-            {userEmail ? userEmail.charAt(0).toUpperCase() : "U"}
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen((prev) => !prev)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-900 ring-offset-2 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-white"
+            aria-haspopup="dialog"
+            aria-expanded={isProfileOpen}
+            aria-label="Open profile details"
+          >
+            {user?.email ? user.email.charAt(0).toUpperCase() : "U"}
+          </button>
+
+          {isProfileOpen && (
+            <PetOwnerProfilePopover
+              user={user}
+              onSaved={onProfileSaved}
+              onClose={() => setIsProfileOpen(false)}
+            />
+          )}
         </div>
       </div>
     </header>

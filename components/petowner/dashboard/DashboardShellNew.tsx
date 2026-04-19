@@ -251,6 +251,33 @@ function BillingRow({ item }: { item: BillingHistoryItem }) {
   );
 }
 
+interface PrescriptionItemRecord {
+  id: number;
+  medicineName: string;
+  dosage: string;
+  frequency: string;
+  durationDays: number;
+}
+
+interface PrescriptionRecord {
+  id: number;
+  petId: number;
+  prescribedAt: string;
+  items: PrescriptionItemRecord[];
+}
+
+const isPrescriptionActive = (prescribedAt: string, durationDays?: number): boolean => {
+  if (!durationDays || durationDays <= 0) {
+    return true;
+  }
+  const prescribedTime = new Date(prescribedAt).getTime();
+  if (Number.isNaN(prescribedTime)) {
+    return true;
+  }
+  const expiryTime = prescribedTime + durationDays * 24 * 60 * 60 * 1000;
+  return Date.now() <= expiryTime;
+};
+
 export default function DashboardShell() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -279,6 +306,7 @@ export default function DashboardShell() {
 
       // Load pets from API
       const petsData = await apiFetch<Pet[]>("/api/pets");
+      const petNameById = new Map(petsData.map((pet) => [pet.id, pet.name]));
 
       // Transform pets data for dashboard
       const dashboardPets: DashboardPet[] = petsData.map((pet) => ({
@@ -324,25 +352,47 @@ export default function DashboardShell() {
         setAppointments([]);
       }
 
-      // Try to load prescriptions if endpoint exists
+      // Load prescriptions for this owner's pets from DB
       try {
-        const prescriptionsData = await apiFetch<any[]>("/api/prescriptions/my");
-        const dashboardPrescriptions: DashboardPrescription[] = prescriptionsData.map((p) => ({
-          id: p.id,
-          petId: p.petId,
-          petName: p.petName || "Unknown",
-          medication: p.medication || p.medicineName,
-          dosage: p.dosage,
-          frequency: p.frequency,
-          status: p.status || "Active",
-        }));
+        const settledPrescriptionCalls = await Promise.allSettled(
+          petsData.map(async (pet) => {
+            const records = await apiFetch<PrescriptionRecord[]>(`/api/pets/${pet.id}/prescriptions`);
+            return { petId: pet.id, records };
+          })
+        );
+
+        const prescriptionsByPet = settledPrescriptionCalls
+          .filter((result): result is PromiseFulfilledResult<{ petId: number; records: PrescriptionRecord[] }> => result.status === "fulfilled")
+          .map((result) => result.value);
+
+        const flattenedRows = prescriptionsByPet.flatMap(({ petId, records }) =>
+          records.flatMap((record) =>
+            (record.items || []).map((item) => ({
+              id: `${record.id}-${item.id}`,
+              petId,
+              petName: petNameById.get(petId) || "Unknown",
+              medication: item.medicineName,
+              dosage: item.dosage,
+              frequency: item.frequency,
+              status: isPrescriptionActive(record.prescribedAt, item.durationDays)
+                ? "Active"
+                : "Completed" as const,
+              prescribedAt: record.prescribedAt,
+            }))
+          )
+        );
+
+        const dashboardPrescriptions: DashboardPrescription[] = flattenedRows
+          .filter((row) => row.status === "Active")
+          .sort((a, b) => new Date(b.prescribedAt).getTime() - new Date(a.prescribedAt).getTime())
+          .map(({ prescribedAt: _prescribedAt, ...row }) => row);
+
         setPrescriptions(dashboardPrescriptions);
         setStats((prev) => ({
           ...prev,
-          activePrescriptions: dashboardPrescriptions.filter((p) => p.status === "Active").length,
+          activePrescriptions: dashboardPrescriptions.length,
         }));
       } catch {
-        // Prescription endpoint not available yet
         setPrescriptions([]);
       }
 
@@ -570,7 +620,7 @@ export default function DashboardShell() {
                           <p className="text-xs text-gray-500">{p.medication}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">${50}</span>
+                      <span className="text-sm font-medium text-gray-900">{p.frequency}</span>
                     </div>
                   ))}
                 </div>
@@ -717,4 +767,3 @@ export default function DashboardShell() {
     </div>
   );
 }
-

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import type { MeResponse } from "@/types/auth";
 import BookingDetailsStep from "@/components/petowner/booking/BookingDetailsStep";
 import DateTimeStep from "@/components/petowner/booking/DateTimeStep";
 import BookingSuccessModal from "@/components/petowner/booking/BookingSuccessModal";
+import PaymentStep from "@/components/petowner/booking/PaymentStep";
 
 interface BookingData {
   // Personal Information
@@ -38,17 +41,26 @@ interface BookingModalProps {
   onClose: () => void;
 }
 
-export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [bookingData, setBookingData] = useState<BookingData>({
-    firstName: "",
-    lastName: "",
-    mobileNumber: "",
-    email: "",
-    address: "",
+function splitName(fullName?: string | null) {
+  const cleaned = (fullName || "").trim();
+  if (!cleaned) return { firstName: "", lastName: "" };
+
+  const parts = cleaned.split(/\s+/);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function createInitialBookingData(user: MeResponse | null): BookingData {
+  const { firstName, lastName } = splitName(user?.fullName);
+
+  return {
+    firstName,
+    lastName,
+    mobileNumber: user?.contactNo || "",
+    email: user?.email || "",
+    address: user?.address || "",
     petId: "",
     petName: "",
     appointmentType: "",
@@ -61,50 +73,72 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     cardNumber: "",
     expiryDate: "",
     cvv: "",
-  });
+  };
+}
+
+export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
+  const { user } = useAuth();
+  const initialBookingData = useMemo(
+    () => createInitialBookingData(user),
+    [user]
+  );
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [bookingData, setBookingData] = useState<BookingData>(initialBookingData);
+
+  useEffect(() => {
+    if (isOpen) {
+      setBookingData(initialBookingData);
+      setCurrentStep(1);
+      setSubmitError(null);
+    }
+  }, [isOpen, initialBookingData]);
 
   const handleNext = async (stepData: Partial<BookingData>) => {
     const merged = { ...bookingData, ...stepData };
     setBookingData(merged);
 
-    if (currentStep === 2) {
-      // Submit appointment to the backend API
-      setSubmitting(true);
-      setSubmitError(null);
-      try {
-        const date = merged.selectedDate;
-        const appointmentDate = date
-          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-          : "";
-
-        const appointmentTime = merged.selectedTime
-          ? merged.selectedTime.length === 5
-            ? `${merged.selectedTime}:00`
-            : merged.selectedTime
-          : "";
-
-        await apiFetch("/api/appointments", {
-          method: "POST",
-          body: {
-            petId: Number(merged.petId),
-            doctorId: merged.doctorId ? Number(merged.doctorId) : undefined,
-            appointmentDate,
-            appointmentTime,
-            appointmentType: merged.appointmentType,
-            notes: merged.note || null,
-          },
-        });
-
-        setShowSuccess(true);
-      } catch (err: any) {
-        setSubmitError(
-          err?.message || "Failed to book appointment. Please try again."
-        );
-      } finally {
-        setSubmitting(false);
-      }
-    } else {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
+      return;
+    }
+
+    // Submit appointment to the backend API after demo payment confirmation
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const date = merged.selectedDate;
+      const appointmentDate = date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+        : "";
+
+      const appointmentTime = merged.selectedTime
+        ? merged.selectedTime.length === 5
+          ? `${merged.selectedTime}:00`
+          : merged.selectedTime
+        : "";
+
+      await apiFetch("/api/appointments", {
+        method: "POST",
+        body: {
+          petId: Number(merged.petId),
+          doctorId: merged.doctorId ? Number(merged.doctorId) : undefined,
+          appointmentDate,
+          appointmentTime,
+          appointmentType: merged.appointmentType,
+          notes: merged.note || null,
+        },
+      });
+
+      setShowSuccess(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "";
+      setSubmitError(message || "Failed to book appointment. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -119,25 +153,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     setCurrentStep(1);
     setShowSuccess(false);
     setSubmitError(null);
-    setBookingData({
-      firstName: "",
-      lastName: "",
-      mobileNumber: "",
-      email: "",
-      address: "",
-      petId: "",
-      petName: "",
-      appointmentType: "",
-      note: "",
-      selectedDate: null,
-      selectedTime: "",
-      doctorId: "",
-      paymentMethod: "Credit Card",
-      cardName: "",
-      cardNumber: "",
-      expiryDate: "",
-      cvv: "",
-    });
+    setBookingData(initialBookingData);
     onClose();
   };
 
@@ -182,14 +198,13 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
             isActive={currentStep === 2}
             isCompleted={currentStep > 2}
           />
-          {/* Commented out: Payment step indicator */}
-          {/* <StepDivider />
+          <StepDivider />
           <StepIndicator
             number={3}
-            label="Select Payment"
+            label="Payment"
             isActive={currentStep === 3}
             isCompleted={false}
-          /> */}
+          />
         </div>
 
         {/* Error banner */}
@@ -206,6 +221,14 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
           )}
           {currentStep === 2 && (
             <DateTimeStep
+              data={bookingData}
+              onNext={handleNext}
+              onBack={handleBack}
+              submitting={submitting}
+            />
+          )}
+          {currentStep === 3 && (
+            <PaymentStep
               data={bookingData}
               onNext={handleNext}
               onBack={handleBack}
