@@ -5,96 +5,91 @@ import type { Medicine } from "@/types/pharmacy";
 
 interface MedicineTableProps {
   medicines: Medicine[];
+  onEdit: (medicine: Medicine) => void;
+  onDelete: (medicine: Medicine) => void;
 }
 
-export default function MedicineTable({ medicines }: MedicineTableProps) {
+export default function MedicineTable({
+  medicines,
+  onEdit,
+  onDelete,
+}: MedicineTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#dce2ef] bg-white">
       <table className="w-full">
         <thead className="border-b border-[#dce2ef] bg-white">
           <tr>
-            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
-              <div className="flex items-center gap-2">
-                Medicine Name
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Medicine ID
             </th>
-            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
-              <div className="flex items-center gap-2">
-                Medicine ID
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Name
             </th>
-            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
-              <div className="flex items-center gap-2">
-                Group Name
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                  />
-                </svg>
-              </div>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Generic Name
             </th>
-            <th className="px-8 py-5 text-left text-[20px] font-semibold text-[#18214f]">
-              Action
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Form
+            </th>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Strength
+            </th>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Status
+            </th>
+            <th className="px-6 py-5 text-left text-[18px] font-semibold text-[#18214f]">
+              Actions
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#e3e8f2]">
+          {medicines.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="px-8 py-8 text-center text-lg text-[#596892]">
+                No medicines found.
+              </td>
+            </tr>
+          ) : null}
+
           {medicines.map((medicine) => (
             <tr key={medicine.id} className="transition-colors hover:bg-[#f7f9ff]">
-              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.name}</td>
-              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.medicineId}</td>
-              <td className="px-8 py-5 text-[20px] text-[#1f2a58]">{medicine.groupName}</td>
-              <td className="px-8 py-5">
-                <button className="flex items-center gap-2 text-[20px] font-medium text-[#1d2c66] hover:text-[#1f5fe0] transition-colors">
-                  View Full Detail
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              <td className="px-6 py-5 text-[16px] text-[#1f2a58]">{medicine.id}</td>
+              <td className="px-6 py-5 text-[16px] text-[#1f2a58]">{medicine.name}</td>
+              <td className="px-6 py-5 text-[16px] text-[#1f2a58]">
+                {medicine.genericName || "-"}
+              </td>
+              <td className="px-6 py-5 text-[16px] text-[#1f2a58]">{medicine.form || "-"}</td>
+              <td className="px-6 py-5 text-[16px] text-[#1f2a58]">
+                {medicine.strength || "-"}
+              </td>
+              <td className="px-6 py-5">
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    medicine.isActive
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {medicine.isActive ? "Active" : "Inactive"}
+                </span>
+              </td>
+              <td className="px-6 py-5">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(medicine)}
+                    className="rounded-lg border border-[#c9d5ef] px-3 py-1.5 text-sm font-medium text-[#1f5fe0] hover:bg-[#eef3ff]"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(medicine)}
+                    className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

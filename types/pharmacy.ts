@@ -1,10 +1,28 @@
 // types/pharmacy.ts
 
 export interface Medicine {
-  id: string;
+  id: number;
   name: string;
-  medicineId: string;
-  groupName: string;
+  genericName: string | null;
+  form: string | null;
+  strength: string | null;
+  isActive: boolean;
+}
+
+export interface CreateMedicineRequest {
+  name: string;
+  genericName?: string;
+  form?: string;
+  strength?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateMedicineRequest {
+  name: string;
+  genericName?: string;
+  form?: string;
+  strength?: string;
+  isActive?: boolean;
 }
 
 export interface InventoryMedicine {

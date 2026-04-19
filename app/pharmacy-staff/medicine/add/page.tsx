@@ -1,13 +1,6 @@
 // app/pharmacy-staff/medicine/add/page.tsx
-import PharmacyShell from "@/components/pharmacy-staff/PharmacyShell";
-import AddMedicineForm from "@/components/pharmacy-staff/medicine/AddMedicineForm";
+import { redirect } from "next/navigation";
 
 export default function AddMedicinePage() {
-  return (
-    <PharmacyShell>
-      <div className="p-8">
-        <AddMedicineForm />
-      </div>
-    </PharmacyShell>
-  );
+  redirect("/pharmacy-staff/medicine");
 }

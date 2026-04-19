@@ -3,83 +3,147 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ApiError, apiFetch } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
-import type { Medicine } from "@/types/pharmacy";
+import type {
+  CreateMedicineRequest,
+  Medicine,
+  UpdateMedicineRequest,
+} from "@/types/pharmacy";
 import MedicineTable from "@/components/pharmacy-staff/medicine/MedicineTable";
+import AddMedicineForm from "@/components/pharmacy-staff/medicine/AddMedicineForm";
 
 export default function PharmacyMedicinePage() {
-  const router = useRouter();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const mockMedicines: Medicine[] = [
-    {
-      id: "1",
-      name: "Canine Deworming Tablet",
-      medicineId: "VET-ANTP-001",
-      groupName: "Antiparasitic",
-    },
-    {
-      id: "2",
-      name: "Feline Deworming Suspension",
-      medicineId: "VET-ANTP-002",
-      groupName: "Antiparasitic",
-    },
-    {
-      id: "3",
-      name: "Amoxiclav Vet 250 mg",
-      medicineId: "VET-ANTI-003",
-      groupName: "Antibiotic",
-    },
-    {
-      id: "4",
-      name: "Doxycycline Vet 100 mg",
-      medicineId: "VET-ANTI-004",
-      groupName: "Antibiotic",
-    },
-    {
-      id: "5",
-      name: "Meloxicam Oral Suspension",
-      medicineId: "VET-PAIN-005",
-      groupName: "Pain Relief",
-    },
-    {
-      id: "6",
-      name: "Carprofen Chewable Tablet",
-      medicineId: "VET-PAIN-006",
-      groupName: "Pain Relief",
-    },
-    {
-      id: "7",
-      name: "Pet Multivitamin Syrup",
-      medicineId: "VET-SUPP-007",
-      groupName: "Supplements",
-    },
-    {
-      id: "8",
-      name: "Probiotic Sachet for Pets",
-      medicineId: "VET-SUPP-008",
-      groupName: "Supplements",
-    },
-  ];
+  const loadMedicines = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setLoadError(null);
+      const response = await apiFetch<Medicine[]>("/api/medicines");
+      setMedicines(response);
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Failed to load medicines from database.";
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const totalMedicines = 298;
+  useEffect(() => {
+    void loadMedicines();
+  }, [loadMedicines]);
+
+  const filteredMedicines = useMemo(() => {
+    const lowerSearch = searchQuery.trim().toLowerCase();
+
+    return medicines.filter((medicine) => {
+      const matchesSearch =
+        !lowerSearch ||
+        medicine.name.toLowerCase().includes(lowerSearch) ||
+        (medicine.genericName || "").toLowerCase().includes(lowerSearch) ||
+        (medicine.form || "").toLowerCase().includes(lowerSearch) ||
+        (medicine.strength || "").toLowerCase().includes(lowerSearch) ||
+        String(medicine.id).includes(lowerSearch);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? medicine.isActive : !medicine.isActive);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [medicines, searchQuery, statusFilter]);
+
+  const handleCreateMedicine = async (payload: CreateMedicineRequest) => {
+    try {
+      setIsCreating(true);
+      setCreateError(null);
+      await apiFetch<Medicine>("/api/medicines", {
+        method: "POST",
+        body: payload,
+      });
+      setShowAddModal(false);
+      await loadMedicines();
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Failed to create medicine in database.";
+      setCreateError(message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUpdateMedicine = async (payload: UpdateMedicineRequest) => {
+    if (!selectedMedicine) return;
+
+    try {
+      setIsUpdating(true);
+      setUpdateError(null);
+      await apiFetch<Medicine>(`/api/medicines/${selectedMedicine.id}`, {
+        method: "PUT",
+        body: payload,
+      });
+      setShowEditModal(false);
+      setSelectedMedicine(null);
+      await loadMedicines();
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Failed to update medicine in database.";
+      setUpdateError(message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteMedicine = async () => {
+    if (!selectedMedicine) return;
+
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      await apiFetch<{ message: string }>(`/api/medicines/${selectedMedicine.id}`, {
+        method: "DELETE",
+      });
+      setShowDeleteModal(false);
+      setSelectedMedicine(null);
+      await loadMedicines();
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : "Failed to delete medicine from database.";
+      setDeleteError(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (!user) {
     return null;
   }
-
-  const filteredMedicines = mockMedicines.filter((medicine) => {
-    const matchesSearch = medicine.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesGroup = !selectedGroup || medicine.groupName === selectedGroup;
-    return matchesSearch && matchesGroup;
-  });
 
   return (
     <ProtectedRoute allowedRoles={["PHARMACIST", "ADMIN"]}>
@@ -150,13 +214,16 @@ export default function PharmacyMedicinePage() {
                 <span>Inventory</span>
                 <span className="text-[#6676a8]">&#8250;</span>
                 <span className="font-semibold text-[#18214f]">
-                  List of Medicines ({totalMedicines})
+                  List of Medicines ({filteredMedicines.length})
                 </span>
               </p>
             </div>
 
             <button
-              onClick={() => router.push("/pharmacy-staff/medicine/add")}
+              onClick={() => {
+                setCreateError(null);
+                setShowAddModal(true);
+              }}
               className="flex items-center gap-3 rounded-2xl bg-[#1f5fe0] px-8 py-4 text-xl font-medium text-white shadow-[0_8px_18px_rgba(31,95,224,0.35)] hover:bg-[#1a54c9]"
             >
               <svg
@@ -180,15 +247,12 @@ export default function PharmacyMedicinePage() {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Search Medicine Inventory.."
+                placeholder="Search by medicine name or ID"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="h-14 w-full rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] px-6 pr-14 text-xl text-[#273566] placeholder:text-[#6272a3] focus:outline-none focus:ring-2 focus:ring-[#7f8ec5]"
               />
-              <button
-                type="button"
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-[#6978ab]"
-              >
+              <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-[#6978ab]">
                 <svg
                   className="h-9 w-9"
                   fill="none"
@@ -202,39 +266,18 @@ export default function PharmacyMedicinePage() {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-              </button>
+              </span>
             </div>
 
-            <button
-              type="button"
-              className="grid h-14 w-14 place-items-center rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] text-[#48588f]"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.8}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-            </button>
-
-            <div className="relative min-w-[300px]">
+            <div className="relative min-w-[260px]">
               <select
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
                 className="h-14 w-full appearance-none rounded-2xl border border-[#d8dfee] bg-[#f7f8fc] pl-6 pr-14 text-xl text-[#273566] focus:outline-none focus:ring-2 focus:ring-[#7f8ec5]"
               >
-                <option value="">- Select Group -</option>
-                <option value="Antiparasitic">Antiparasitic</option>
-                <option value="Antibiotic">Antibiotic</option>
-                <option value="Pain Relief">Pain Relief</option>
-                <option value="Supplements">Supplements</option>
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
               <svg
                 className="pointer-events-none absolute right-5 top-1/2 h-6 w-6 -translate-y-1/2 text-[#6877a9]"
@@ -252,8 +295,121 @@ export default function PharmacyMedicinePage() {
             </div>
           </div>
 
-          <MedicineTable medicines={filteredMedicines} />
+          {loadError ? (
+            <div className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-red-700">
+              {loadError}
+            </div>
+          ) : null}
+
+          {isLoading ? (
+            <div className="rounded-2xl border border-[#dce2ef] bg-white p-8 text-center text-lg text-[#596892]">
+              Loading medicines...
+            </div>
+          ) : (
+            <MedicineTable
+              medicines={filteredMedicines}
+              onEdit={(medicine) => {
+                setSelectedMedicine(medicine);
+                setUpdateError(null);
+                setShowEditModal(true);
+              }}
+              onDelete={(medicine) => {
+                setSelectedMedicine(medicine);
+                setDeleteError(null);
+                setShowDeleteModal(true);
+              }}
+            />
+          )}
         </main>
+
+        {showAddModal ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+            <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+              <AddMedicineForm
+                onSubmit={handleCreateMedicine}
+                onCancel={() => {
+                  if (!isCreating) {
+                    setShowAddModal(false);
+                    setCreateError(null);
+                  }
+                }}
+                isSubmitting={isCreating}
+                errorMessage={createError ?? undefined}
+                title="Add Medicine"
+                submitLabel="Save Medicine"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {showEditModal && selectedMedicine ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+            <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+              <AddMedicineForm
+                onSubmit={handleUpdateMedicine}
+                onCancel={() => {
+                  if (!isUpdating) {
+                    setShowEditModal(false);
+                    setSelectedMedicine(null);
+                    setUpdateError(null);
+                  }
+                }}
+                isSubmitting={isUpdating}
+                errorMessage={updateError ?? undefined}
+                initialValues={selectedMedicine}
+                title="Edit Medicine"
+                submitLabel="Update Medicine"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {showDeleteModal && selectedMedicine ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+              <h2 className="text-xl font-semibold text-[#18214f]">Delete Medicine</h2>
+              <p className="mt-3 text-sm text-[#46557f]">
+                Are you sure you want to delete
+                <span className="font-semibold"> {selectedMedicine.name}</span>?
+              </p>
+              <p className="mt-2 text-xs text-[#6a77a1]">
+                If this medicine is already linked to prescriptions or stock batches,
+                deletion will be blocked.
+              </p>
+
+              {deleteError ? (
+                <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {deleteError}
+                </p>
+              ) : null}
+
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isDeleting) {
+                      setShowDeleteModal(false);
+                      setSelectedMedicine(null);
+                      setDeleteError(null);
+                    }
+                  }}
+                  className="rounded-xl border border-[#d8dfee] px-4 py-2 text-sm font-medium text-[#2b3c72] hover:bg-[#f7f8fc]"
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteMedicine}
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </ProtectedRoute>
   );
