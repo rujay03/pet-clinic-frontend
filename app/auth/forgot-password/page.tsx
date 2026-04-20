@@ -14,6 +14,7 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Forgot-password flow: request OTP first, then reset with OTP + new password.
   const [step, setStep] = useState<"request" | "reset">("request");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -22,10 +23,12 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Surface only unmet password requirements while the user is typing.
   const passwordRequirements = useMemo(() => {
     return getPasswordRequirements(newPassword);
   }, [newPassword]);
 
+  // Step 1: ask the backend to generate/send an OTP for this email.
   async function handleRequestOtp(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -55,6 +58,7 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  // Keep users on the reset step and let them request a fresh OTP.
   async function handleResendOtp() {
     setError(null);
     setSuccessMessage(null);
@@ -82,6 +86,7 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  // Step 2: validate client-side inputs, then submit OTP + new password.
   async function handleResetPassword(e: FormEvent) {
     e.preventDefault();
     setError(null);
